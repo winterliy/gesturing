@@ -3,3 +3,5 @@ version: '${version}'
 main: dev.ledge.gesturing.GesturingPlugin
 api-version: '26.3'
 description: Gesture plugin for GLAP1-compatible servers.
+depend:
+  - GSit
