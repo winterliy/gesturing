@@ -36,7 +36,7 @@ public final class GesturingFabric implements ModInitializer {
             if (entity instanceof ServerPlayer player) stop(player, false);
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> stop(handler.player, false));
-        System.out.println("[Gesturing] Fabric 0.3.0 initialized for Minecraft 26.3.");
+        System.out.println("[Gesturing] Fabric 0.3.1 initialized for Minecraft 26.3.");
     }
 
     private void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher) {
