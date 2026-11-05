@@ -36,7 +36,7 @@ public final class GesturingFabric implements ModInitializer {
             if (entity instanceof ServerPlayer player) stop(player, false);
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> stop(handler.player, false));
-        System.out.println("[Gesturing] Fabric 0.3.1 initialized for Minecraft 26.3.");
+        System.out.println("[Gesturing] Fabric 0.3.2 initialized for Minecraft 26.3.");
     }
 
     private void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -69,7 +69,7 @@ public final class GesturingFabric implements ModInitializer {
             return 0;
         }
         Offset offset = SeatGeometry.offsetFor(state);
-        float yaw = state.getBlock() instanceof StairBlock ? offset.yaw() : player.getYRot();
+        float yaw = SeatGeometry.hasHorizontalFacing(state) ? offset.yaw() : player.getYRot();
         double x = support.getX() + offset.x();
         double y = support.getY() + offset.y() - 0.025d;
         double z = support.getZ() + offset.z();

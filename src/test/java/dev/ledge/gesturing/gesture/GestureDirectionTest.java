@@ -17,5 +17,8 @@ class GestureDirectionTest {
     @Test
     void rejectsUnknownDirections() {
         assertTrue(GestureDirection.parse("up").isEmpty());
+        assertTrue(GestureDirection.parse("").isEmpty());
+        assertTrue(GestureDirection.parse(" east ").isEmpty());
+        assertTrue(GestureDirection.parse(null).isEmpty());
     }
 }

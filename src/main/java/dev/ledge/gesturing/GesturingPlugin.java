@@ -44,7 +44,7 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
             registered.setExecutor(this);
             if (command.equals("lay")) registered.setTabCompleter(this);
         }
-        getLogger().info("Gesturing 0.3.0 enabled for Paper/GLAP 26.3.");
+        getLogger().info("Gesturing 0.3.2 enabled for Paper/GLAP 26.3.");
     }
 
     @Override public void onDisable() {

@@ -8,6 +8,7 @@ import net.minecraft.world.entity.Entity;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.type.Stairs;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
@@ -23,8 +24,9 @@ public final class SeatManager {
         Block block = player.getLocation().getBlock().getRelative(BlockFace.DOWN);
         if (block.isEmpty() || block.isLiquid()) return false;
         SeatGeometry.Offset offset = SeatGeometry.offsetFor(block.getBlockData());
+        boolean directional = block.getBlockData() instanceof Stairs || block.getBlockData() instanceof Directional;
         Location location = new Location(block.getWorld(), block.getX() + offset.x(), block.getY() + offset.y() - 0.025,
-                block.getZ() + offset.z(), block.getBlockData() instanceof Stairs ? offset.yaw() : player.getLocation().getYaw(), 0f);
+                block.getZ() + offset.z(), directional ? offset.yaw() : player.getLocation().getYaw(), 0f);
         SeatEntity seat = new SeatEntity(location);
         Entity rider = ((CraftPlayer) player).getHandle();
         if (!rider.startRiding(seat, true, true)) {

@@ -30,7 +30,22 @@ public final class SeatGeometry {
                 return offsetFor(Shape.cornerStair(direction, corner));
             }
         }
+        Direction facing = horizontalFacing(state);
+        if (facing != null) return offsetFor(Shape.directional(facing));
         return offsetFor(Shape.full());
+    }
+
+    public static boolean hasHorizontalFacing(BlockState state) { return horizontalFacing(state) != null; }
+
+    private static Direction horizontalFacing(BlockState state) {
+        for (var property : state.getProperties()) {
+            if (!property.getName().equals("facing")) continue;
+            Object value = state.getValue(property);
+            if (value instanceof net.minecraft.core.Direction direction && direction.getAxis().isHorizontal()) {
+                return Direction.from(direction.getName());
+            }
+        }
+        return null;
     }
 
     public static Offset offsetFor(Shape shape) {
@@ -69,6 +84,8 @@ public final class SeatGeometry {
                     }
                 }
             }
+        } else if (shape.kind() == Kind.DIRECTIONAL) {
+            yaw = shape.facing().yaw();
         }
         return new Offset(x, y, z, yaw);
     }
@@ -77,10 +94,18 @@ public final class SeatGeometry {
         NORTH, EAST, SOUTH, WEST;
         Direction opposite() { return values()[(ordinal() + 2) % 4]; }
         static Direction from(String direction) { return valueOf(direction.toUpperCase(java.util.Locale.ROOT)); }
+        float yaw() {
+            return switch (this) {
+                case NORTH -> 180f;
+                case EAST -> -90f;
+                case SOUTH -> 0f;
+                case WEST -> 90f;
+            };
+        }
     }
 
     public enum Corner { LEFT, RIGHT }
-    public enum Kind { FULL, BOTTOM_SLAB, TOP_SLAB, STAIRS }
+    public enum Kind { FULL, BOTTOM_SLAB, TOP_SLAB, STAIRS, DIRECTIONAL }
 
     public record Shape(Kind kind, boolean bottomHalf, Direction facing, Corner corner) {
         public static Shape full() { return new Shape(Kind.FULL, false, Direction.NORTH, null); }
@@ -88,6 +113,7 @@ public final class SeatGeometry {
         public static Shape topSlab() { return new Shape(Kind.TOP_SLAB, false, Direction.NORTH, null); }
         public static Shape straightStair(Direction facing) { return new Shape(Kind.STAIRS, true, facing, null); }
         public static Shape cornerStair(Direction facing, Corner corner) { return new Shape(Kind.STAIRS, true, facing, corner); }
+        public static Shape directional(Direction facing) { return new Shape(Kind.DIRECTIONAL, false, facing, null); }
     }
 
     public record Offset(double x, double y, double z, float yaw) { }
