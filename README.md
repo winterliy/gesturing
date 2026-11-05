@@ -45,3 +45,10 @@ Copy `fabric/build/libs/gesturing-fabric-0.3.0.jar` into the Fabric server's
 API 0.162.0+26.3 or newer. The Fabric build supports `/sit`, `/lay`,
 `/bellyflop`, `/legsup`, `/spin`, `/crawl`, and `/stand`. Player-seat toggling
 is currently Paper-only.
+
+## Verification
+
+`./gradlew build` and `./gradlew -p fabric clean test build` pass. The Fabric
+server was also started in an isolated test directory with EULA acceptance and
+returned a Minecraft 26.3 status response (protocol 777). Player login and
+in-game command behavior still need a client-side test.
