@@ -1,106 +1,169 @@
 package dev.ledge.gesturing;
 
+import dev.ledge.gesturing.sit.SeatManager;
+import dev.ledge.gesturing.gesture.GestureDirection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.command.PluginCommand;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Pose;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-import org.bukkit.event.server.TabCompleteEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.player.PlayerToggleSneakEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-public final class GesturingPlugin extends JavaPlugin implements Listener {
-    private static final Map<String, Float> DIRECTION_YAWS = Map.of(
-            "south", 0.0f,
-            "west", 90.0f,
-            "north", 180.0f,
-            "east", -90.0f
-    );
-    private static final Set<String> DIRECTIONS = DIRECTION_YAWS.keySet();
+public final class GesturingPlugin extends JavaPlugin implements Listener, CommandExecutor, TabCompleter {
+    private final Map<UUID, Pose> originalPoses = new HashMap<>();
+    private final Map<UUID, Gesture> active = new HashMap<>();
+    private final Set<UUID> playerSitOptOut = new HashSet<>();
+    private final SeatManager seats = new SeatManager();
 
-    private String gsitCommandPrefix;
-
-    @Override
-    public void onEnable() {
-        var gsit = getServer().getPluginManager().getPlugin("GSit");
-        if (gsit == null || !gsit.isEnabled()) {
-            getLogger().severe("GSit is required. Gesturing will be disabled.");
-            getServer().getPluginManager().disablePlugin(this);
-            return;
-        }
-
-        gsitCommandPrefix = gsit.getName().toLowerCase(Locale.ROOT) + ":";
+    @Override public void onEnable() {
         getServer().getPluginManager().registerEvents(this, this);
-        getLogger().info("Gesturing is enabled with GSit on GLAP1.");
+        for (String command : new String[]{"sit", "lay", "bellyflop", "legsup", "spin", "crawl", "stand"}) {
+            var registered = getCommand(command);
+            if (registered == null) throw new IllegalStateException("Missing command in plugin.yml: " + command);
+            registered.setExecutor(this);
+            if (command.equals("lay")) registered.setTabCompleter(this);
+        }
+        getLogger().info("Gesturing 0.3.0 enabled for Paper/GLAP 26.3.");
     }
 
-    @EventHandler
-    public void onPlayerCommand(PlayerCommandPreprocessEvent event) {
-        String[] parts = event.getMessage().trim().split("\\s+");
-        if (parts.length == 0) {
+    @Override public void onDisable() {
+        for (Player player : getServer().getOnlinePlayers()) stop(player, false);
+        seats.clear();
+    }
+
+    @Override public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
+                                       @NotNull String label, @NotNull String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(ChatColor.RED + "이 명령어는 플레이어만 사용할 수 있습니다.");
+            return true;
+        }
+        switch (command.getName().toLowerCase(Locale.ROOT)) {
+            case "sit" -> {
+                if (args.length > 0 && args[0].equalsIgnoreCase("playertoggle")) {
+                    boolean optedOut;
+                    if (playerSitOptOut.remove(player.getUniqueId())) optedOut = false;
+                    else { playerSitOptOut.add(player.getUniqueId()); optedOut = true; }
+                    player.sendMessage(optedOut ? "다른 플레이어가 위에 앉을 수 없습니다." : "다른 플레이어가 위에 앉을 수 있습니다.");
+                } else if (args.length > 0 && args[0].equalsIgnoreCase("toggle")) {
+                    if (seats.isSitting(player)) stop(player, true);
+                    else startSit(player);
+                } else if (args.length == 0) startSit(player);
+                else player.sendMessage(ChatColor.YELLOW + "사용법: /sit [toggle|playertoggle]");
+            }
+            case "lay" -> startPose(player, Pose.SLEEPING, args, "사용법: /lay <east|west|south|north>", Gesture.LAY);
+            case "bellyflop" -> startPose(player, Pose.SWIMMING, new String[0], null, Gesture.BELLYFLOP);
+            case "legsup" -> startPose(player, Pose.SLEEPING, new String[0], null, Gesture.LEGS_UP);
+            case "spin" -> startPose(player, Pose.SPIN_ATTACK, new String[0], null, Gesture.SPIN);
+            case "crawl" -> {
+                if (active.get(player.getUniqueId()) == Gesture.CRAWL) stop(player, true);
+                else startPose(player, Pose.SWIMMING, new String[0], null, Gesture.CRAWL);
+            }
+            case "stand" -> stop(player, true);
+            default -> { return false; }
+        }
+        return true;
+    }
+
+    private void startSit(Player player) {
+        stop(player, false);
+        remember(player);
+        if (!seats.sitOnSupportingBlock(player)) {
+            originalPoses.remove(player.getUniqueId());
+            player.sendMessage(ChatColor.RED + "앉을 수 있는 블록을 찾지 못했습니다.");
             return;
         }
+        active.put(player.getUniqueId(), Gesture.SIT);
+        player.sendMessage(ChatColor.GREEN + "앉았습니다. 이동하거나 웅크리면 일어납니다.");
+    }
 
-        String command = parts[0].substring(1).toLowerCase(Locale.ROOT);
-        if (command.contains(":")) {
-            return;
+    private void startPose(Player player, Pose pose, String[] args, @Nullable String usage, Gesture gesture) {
+        if (usage != null) {
+            if (args.length != 1 || GestureDirection.parse(args[0]).isEmpty()) {
+                player.sendMessage(ChatColor.YELLOW + usage);
+                return;
+            }
         }
+        stop(player, false);
+        remember(player);
+        if (usage != null) {
+            player.setRotation(GestureDirection.parse(args[0]).orElseThrow().yaw(), player.getLocation().getPitch());
+        }
+        player.setPose(pose, true);
+        active.put(player.getUniqueId(), gesture);
+        player.sendMessage(ChatColor.GREEN + "동작을 시작했습니다. 이동하거나 웅크리면 종료됩니다.");
+    }
 
-        if (command.equals("sit")) {
+    private void remember(Player player) { originalPoses.putIfAbsent(player.getUniqueId(), player.getPose()); }
+
+    private void stop(Player player, boolean message) {
+        UUID id = player.getUniqueId();
+        boolean wasActive = active.remove(id) != null;
+        seats.stop(player);
+        Pose old = originalPoses.remove(id);
+        if (old != null && player.isOnline() && !player.isDead()) player.setPose(old, false);
+        if (message) player.sendMessage(wasActive ? ChatColor.GREEN + "동작을 종료했습니다." : ChatColor.YELLOW + "현재 동작 중이 아닙니다.");
+    }
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onPlayerClick(PlayerInteractEntityEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND || !(event.getRightClicked() instanceof Player target)) return;
+        Player rider = event.getPlayer();
+        if (playerSitOptOut.contains(target.getUniqueId()) || rider == target) return;
+        stop(rider, false);
+        remember(rider);
+        if (seats.sitOnPlayer(rider, target)) {
+            active.put(rider.getUniqueId(), Gesture.PLAYER_SIT);
             event.setCancelled(true);
-            executeGsitCommand(event.getPlayer(), "sit");
-        } else if (command.equals("lay")) {
-            event.setCancelled(true);
-            handleLay(event.getPlayer(), parts);
-        }
+        } else originalPoses.remove(rider.getUniqueId());
     }
 
-    @EventHandler
-    public void onTabComplete(TabCompleteEvent event) {
-        if (!(event.getSender() instanceof Player)
-                || !event.getBuffer().toLowerCase(Locale.ROOT).matches("^/lay\\s+[^\\s]*$")) {
-            return;
-        }
-
-        String typed = event.getBuffer().substring(event.getBuffer().indexOf(' ') + 1)
-                .toLowerCase(Locale.ROOT);
-        event.setCompletions(DIRECTIONS.stream()
-                .filter(direction -> direction.startsWith(typed))
-                .sorted()
-                .toList());
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onMove(PlayerMoveEvent event) {
+        if (event.getTo() != null && moved(event.getFrom(), event.getTo())) stop(event.getPlayer(), false);
+    }
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onTeleport(PlayerTeleportEvent event) { stop(event.getPlayer(), false); }
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onSneak(PlayerToggleSneakEvent event) { if (event.isSneaking()) stop(event.getPlayer(), false); }
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onDamage(EntityDamageEvent event) { if (event.getEntity() instanceof Player player) stop(player, false); }
+    @EventHandler public void onQuit(PlayerQuitEvent event) {
+        seats.stopPlayersSittingOn(event.getPlayer());
+        stop(event.getPlayer(), false);
     }
 
-    private void handleLay(Player player, String[] parts) {
-        if (parts.length != 2) {
-            player.sendMessage(ChatColor.YELLOW + "사용법: /lay <east|west|south|north>");
-            return;
-        }
-
-        String direction = parts[1].toLowerCase(Locale.ROOT);
-        Float yaw = DIRECTION_YAWS.get(direction);
-        if (yaw == null) {
-            player.sendMessage(ChatColor.RED + "방향은 east, west, south, north 중 하나여야 합니다.");
-            return;
-        }
-
-        Location facing = player.getLocation();
-        player.setRotation(yaw, facing.getPitch());
-        executeGsitCommand(player, "lay");
+    @Override public @Nullable java.util.List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
+                                                                     @NotNull String alias, @NotNull String[] args) {
+        if (!command.getName().equalsIgnoreCase("lay") || args.length != 1) return java.util.List.of();
+        String prefix = args[0].toLowerCase(Locale.ROOT);
+        return java.util.Arrays.stream(GestureDirection.values()).map(direction -> direction.name().toLowerCase(Locale.ROOT))
+                .filter(direction -> direction.startsWith(prefix)).sorted().toList();
     }
 
-    private void executeGsitCommand(Player player, String command) {
-        String namespacedCommand = gsitCommandPrefix + command;
-        PluginCommand gsitPluginCommand = getServer().getPluginCommand(namespacedCommand);
-        if (gsitPluginCommand == null) {
-            player.sendMessage(ChatColor.RED + "GSit 명령어를 찾을 수 없습니다: /" + command);
-            getLogger().warning("GSit did not register the expected command: " + namespacedCommand);
-            return;
-        }
-
-        player.performCommand(namespacedCommand);
+    private boolean moved(Location from, Location to) {
+        return from.getWorld() != to.getWorld() || from.getX() != to.getX() || from.getY() != to.getY() || from.getZ() != to.getZ();
     }
+
+    private enum Gesture { SIT, PLAYER_SIT, LAY, BELLYFLOP, LEGS_UP, SPIN, CRAWL }
 }

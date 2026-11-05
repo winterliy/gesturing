@@ -1,9 +1,10 @@
 plugins {
     java
+    id("io.papermc.paperweight.userdev") version "2.0.0-beta.23"
 }
 
 group = "dev.ledge"
-version = "0.1.0"
+version = "0.3.0"
 
 repositories {
     mavenCentral()
@@ -11,8 +12,12 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:26.3.build.218-stable")
+    paperweight.paperDevBundle("26.3.build.218-stable")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
+
+paperweight.reobfArtifactConfiguration = io.papermc.paperweight.userdev.ReobfArtifactConfiguration.MOJANG_PRODUCTION
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(25))
@@ -21,6 +26,10 @@ java {
 tasks.withType<JavaCompile>().configureEach {
     options.release.set(25)
     options.encoding = "UTF-8"
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 tasks.processResources {

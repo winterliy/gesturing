@@ -2,6 +2,44 @@ name: Gesturing
 version: '${version}'
 main: dev.ledge.gesturing.GesturingPlugin
 api-version: '26.3'
-description: Gesture plugin for GLAP1-compatible servers.
-depend:
-  - GSit
+description: Standalone Paper/GLAP 26.3 gesture and seating plugin.
+commands:
+  sit:
+    description: Sit on the supporting block or toggle player sitting.
+    usage: /sit [toggle|playertoggle]
+    permission: gesturing.sit
+  lay:
+    description: Lie down facing a compass direction.
+    usage: /lay <east|west|south|north>
+    permission: gesturing.lay
+  bellyflop:
+    description: Lie face-down.
+    usage: /bellyflop
+    permission: gesturing.pose
+  legsup:
+    description: Lie on your back with legs raised.
+    usage: /legsup
+    permission: gesturing.pose
+  spin:
+    description: Spin in place.
+    usage: /spin
+    permission: gesturing.pose
+  crawl:
+    description: Toggle crawling.
+    usage: /crawl
+    permission: gesturing.crawl
+  stand:
+    description: Stop your current gesture.
+    usage: /stand
+    permission: gesturing.stand
+permissions:
+  gesturing.sit:
+    default: true
+  gesturing.lay:
+    default: true
+  gesturing.pose:
+    default: true
+  gesturing.crawl:
+    default: true
+  gesturing.stand:
+    default: true
