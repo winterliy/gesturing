@@ -1,5 +1,8 @@
 .gradle/
 build/
+fabric/.gradle/
+fabric/build/
+fabric/run/
 .idea/
 .vscode/.classpath
 .vscode/.project
