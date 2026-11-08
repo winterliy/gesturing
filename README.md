@@ -1,6 +1,6 @@
 # Gesturing
 
-Gesturing is a standalone Minecraft 26.1.2 plugin for Paper and GLAP1, with a separate
+Gesturing is a standalone Minecraft 1.21.11 plugin for Paper and GLAP1, with a separate
 Fabric server mod. It does not depend on GSit at runtime. Shape-aware seats
 and the invisible NMS seat entity are adapted from GSit 3.8.0 under
 GPL-3.0-only; attribution and license are in
@@ -8,8 +8,8 @@ GPL-3.0-only; attribution and license are in
 
 ## Requirements
 
-- Paper 26.2 (build 135 tested) or GLAP1 for Minecraft 26.1.2
-- Java 25 or newer
+- Paper 26.2 (build 135 tested) or GLAP1 for Minecraft 1.21.11
+- Java 21 or newer
 
 ## Commands
 
@@ -39,7 +39,7 @@ restart the server. `/sit` is command-only; right-clicking blocks does not sit.
 
 ### Fabric server mod
 
-The Fabric build targets Minecraft 26.1.2 and Java 25. Build it with:
+The Fabric build targets Minecraft 1.21.11 and Java 25. Build it with:
 
 ```sh
 ./gradlew -p fabric build
@@ -47,7 +47,7 @@ The Fabric build targets Minecraft 26.1.2 and Java 25. Build it with:
 
 Copy `fabric/build/libs/gesturing-fabric-0.3.2.jar` into the Fabric server's
 `mods` folder. The server must have Fabric Loader 0.20.1 or newer and Fabric
-API 0.155.0+26.1.2 or newer. The Fabric build supports `/sit`, `/lay`,
+API 0.141.0+1.21.11 or newer. The Fabric build supports `/sit`, `/lay`,
 `/bellyflop`, `/legsup`, `/spin`, `/crawl`, and `/stand`. Player-seat toggling
 is currently Paper-only. Fabric GameTests exercise full blocks, slabs, stairs,
 directional blocks, sit toggling, four `/lay` directions, every pose, invalid
@@ -55,6 +55,13 @@ inputs, and cleanup after movement, teleport, sneaking, damage notification,
 and disconnect.
 
 ## Verification
+
+### Branch `1.21.11` (2026-11-09)
+
+- Paper 1.21.11 build 132 (dev bundle `1.21.11-R0.1-SNAPSHOT`, Java 21): plugin enables on a fresh isolated server.
+- Fabric 1.21.11 (Fabric API 0.141.6, Mojang mappings, Java 21): `All 3 required tests passed`.
+- The 26.x code compiled unchanged; only the build setup differs (Java 21, `fabric-loom` with Mojang mappings).
+- Not yet checked with a real 1.21.11 client.
 
 ### Branch `26.1.2` (2026-11-09)
 
@@ -66,7 +73,7 @@ and disconnect.
 ### Branch `26.2` (2026-11-09)
 
 - Paper 26.2 build 135: plugin builds and enables on a fresh isolated server.
-- Fabric 26.2 (Fabric API 0.155.0+26.1.2): `All 3 required tests passed`.
+- Fabric 26.2 (Fabric API 0.141.0+1.21.11): `All 3 required tests passed`.
 - API differences from 26.3: `ClientboundMoveEntityPacket.PosRot` takes three `short` deltas instead of `VecDelta`, and
   `setPermanentlyInvulnerable` is `setInvulnerable`.
 - Not yet checked with a real 26.2 client. The 26.3 in-game results below were taken on branch `26.3`.
