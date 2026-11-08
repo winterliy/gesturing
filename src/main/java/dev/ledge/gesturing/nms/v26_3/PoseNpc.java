@@ -44,9 +44,9 @@ import net.minecraft.world.level.block.state.properties.BedPart;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.CraftServer;
-import org.bukkit.craftbukkit.CraftWorld;
-import org.bukkit.craftbukkit.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_19_R3.CraftServer;
+import org.bukkit.craftbukkit.v1_19_R3.CraftWorld;
+import org.bukkit.craftbukkit.v1_19_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
@@ -150,7 +150,7 @@ public final class PoseNpc {
         serverPlayer.setInvisible(true);
         setEquipmentVisibility(false);
 
-        List<Packet<? super ClientGamePacketListener>> packets = new ArrayList<>();
+        List<Packet<ClientGamePacketListener>> packets = new ArrayList<>();
         packets.add(addInfoPacket);
         packets.add(new ClientboundAddEntityPacket(npc.getId(), npc.getUUID(), npc.getX(), npc.getY(), npc.getZ(),
                 npc.getXRot(), npc.getYRot(), npc.getType(), 0, npc.getDeltaMovement(), npc.getYHeadRot()));
@@ -172,7 +172,7 @@ public final class PoseNpc {
         for (Player viewer : viewers) addViewer(viewer);
 
         hideNameEntity.setVehicle(npc);
-        List<Packet<? super ClientGamePacketListener>> own = new ArrayList<>();
+        List<Packet<ClientGamePacketListener>> own = new ArrayList<>();
         own.add(new ClientboundAddEntityPacket(hideNameEntity.getId(), hideNameEntity.getUUID(), hideNameEntity.getX(),
                 hideNameEntity.getY(), hideNameEntity.getZ(), hideNameEntity.getXRot(), hideNameEntity.getYRot(),
                 hideNameEntity.getType(), 0, hideNameEntity.getDeltaMovement(), hideNameEntity.getYHeadRot()));
@@ -285,7 +285,7 @@ public final class PoseNpc {
         ServerLevel level = ((CraftWorld) seatLocation.getWorld()).getHandle();
         GameProfile profile = new GameProfile(UUID.randomUUID(), seatPlayer.getName());
         profile.getProperties().putAll(serverPlayer.getGameProfile().getProperties());
-        ServerPlayer created = new ServerPlayer(server, level, profile, serverPlayer.clientInformation());
+        ServerPlayer created = new ServerPlayer(server, level, profile);
         created.connection = serverPlayer.connection;
         return created;
     }

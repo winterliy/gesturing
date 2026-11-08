@@ -140,12 +140,12 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
                     player.sendBlockChange(ceiling, Material.BARRIER.createBlockData());
                     ceilings.put(player.getUniqueId(), ceiling);
                 }
-                player.setPose(pose, true);
+                setPose(player, pose);
             }
             case SPIN -> {
-                player.setPose(pose, true);
+                setPose(player, pose);
             }
-            default -> player.setPose(pose, true);
+            default -> setPose(player, pose);
         }
         anchors.put(player.getUniqueId(), player.getLocation());
         active.put(player.getUniqueId(), gesture);
@@ -169,7 +169,7 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
         seats.stop(player);
         cleanupPose(player);
         Pose old = originalPoses.remove(id);
-        if (old != null && player.isOnline() && !player.isDead()) player.setPose(old, false);
+        if (old != null && player.isOnline() && !player.isDead()) setPose(player, old);
         if (message) player.sendMessage(wasActive ? ChatColor.GREEN + "동작을 종료했습니다." : ChatColor.YELLOW + "현재 동작 중이 아닙니다.");
     }
 
@@ -219,4 +219,10 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
     }
 
     private enum Gesture { SIT, PLAYER_SIT, LAY, BELLYFLOP, LEGS_UP, SPIN, CRAWL }
+
+    /** Bukkit 1.19.4 has no Entity#setPose, so set the NMS pose directly. */
+    private static void setPose(Player player, Pose pose) {
+        ((org.bukkit.craftbukkit.v1_19_R3.entity.CraftPlayer) player).getHandle()
+                .setPose(net.minecraft.world.entity.Pose.valueOf(pose.name()));
+    }
 }

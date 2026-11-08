@@ -90,14 +90,14 @@ final class PoseNpc {
 
     PoseNpc(ServerPlayer player, Vec3 seatPos, float seatYaw, Kind kind) {
         this.player = player;
-        this.level = (ServerLevel) player.level();
+        this.level = (ServerLevel) player.level;
         this.kind = kind;
         this.lying = kind == Kind.LAY || kind == Kind.LEGS_UP;
         this.seatPos = seatPos;
         bedPos = BlockPos.containing(seatPos.x, level.getMinBuildHeight(), seatPos.z);
 
         GameProfile profile = copyProfile(player.getGameProfile());
-        npc = new ServerPlayer(level.getServer(), level, profile, player.clientInformation());
+        npc = new ServerPlayer(level.getServer(), level, profile);
         npc.connection = player.connection;
         double height = seatPos.y - BASE_OFFSET;
         double scale = player.getScale();
@@ -148,7 +148,7 @@ final class PoseNpc {
         player.getEntityData().set(RIGHT_SHOULDER_ACCESSOR, new net.minecraft.nbt.CompoundTag());
         player.setInvisible(true);
 
-        List<Packet<? super ClientGamePacketListener>> packets = new ArrayList<>();
+        List<Packet<ClientGamePacketListener>> packets = new ArrayList<>();
         packets.add(addInfoPacket);
         packets.add(addEntity(npc));
         if (kind == Kind.LEGS_UP) {
@@ -168,7 +168,7 @@ final class PoseNpc {
         setEquipmentVisibility(false);
 
         attach(hideNameEntity, npc);
-        List<Packet<? super ClientGamePacketListener>> own = new ArrayList<>();
+        List<Packet<ClientGamePacketListener>> own = new ArrayList<>();
         own.add(addEntity(hideNameEntity));
         own.add(new ClientboundSetEntityDataPacket(hideNameEntity.getId(), hideNameEntity.getEntityData().getNonDefaultValues()));
         own.add(new ClientboundSetPassengersPacket(npc));

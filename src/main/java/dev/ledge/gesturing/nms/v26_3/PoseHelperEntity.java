@@ -8,7 +8,7 @@ import java.util.List;
 import net.minecraft.world.entity.AreaEffectCloud;
 import net.minecraft.world.entity.Entity;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.craftbukkit.v1_19_R3.CraftWorld;
 
 /**
  * Copyright (C) Gecolay and contributors.
@@ -32,7 +32,7 @@ public final class PoseHelperEntity extends AreaEffectCloud {
         if (vehicleField != null) return;
         List<Field> candidates = new ArrayList<>();
         for (Field field : Entity.class.getDeclaredFields()) if (field.getType().equals(Entity.class)) candidates.add(field);
-        Field field = candidates.getFirst();
+        Field field = candidates.get(0);
         field.setAccessible(true);
         vehicleField = field;
     }

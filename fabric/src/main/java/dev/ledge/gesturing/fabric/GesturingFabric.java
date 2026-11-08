@@ -40,7 +40,7 @@ public final class GesturingFabric implements ModInitializer {
             return true;
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> stop(handler.player, false));
-        System.out.println("[Gesturing] Fabric 0.3.2 initialized for Minecraft 1.20.6.");
+        System.out.println("[Gesturing] Fabric 0.3.2 initialized for Minecraft 1.19.4.");
     }
 
     private void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -76,7 +76,7 @@ public final class GesturingFabric implements ModInitializer {
     /** Mounts the player on an invisible seat on the supporting block; yawOverride is used for non-directional blocks. */
     private GestureState seat(ServerPlayer player, Float yawOverride, Pose pose) {
         BlockPos support = player.blockPosition().below();
-        ServerLevel level = (ServerLevel) player.level();
+        ServerLevel level = (ServerLevel) player.level;
         BlockState state = level.getBlockState(support);
         if (state.isAir() || !state.getFluidState().isEmpty()) {
             player.sendSystemMessage(Component.literal("앉을 수 있는 블록을 찾지 못했습니다."));
@@ -139,7 +139,7 @@ public final class GesturingFabric implements ModInitializer {
         stop(player, false);
         GestureState state = new GestureState(player.getPose(), Pose.SWIMMING, null, player.position(), null, null, null, 0f);
         BlockPos ceiling = player.blockPosition().above();
-        if (player.level().getBlockState(ceiling).isAir()) {
+        if (player.level.getBlockState(ceiling).isAir()) {
             player.connection.send(new ClientboundBlockUpdatePacket(ceiling, Blocks.BARRIER.defaultBlockState()));
             state = state.withCeiling(ceiling);
         }
@@ -181,7 +181,7 @@ public final class GesturingFabric implements ModInitializer {
             }
         }
         if (state.ceiling() != null && !player.isRemoved()) {
-            player.connection.send(new ClientboundBlockUpdatePacket(player.level(), state.ceiling()));
+            player.connection.send(new ClientboundBlockUpdatePacket(player.level, state.ceiling()));
         }
         if (!player.isRemoved() && state.seat() == null) player.setPose(state.originalPose());
         if (notify) player.sendSystemMessage(Component.literal("동작을 종료했습니다."));
