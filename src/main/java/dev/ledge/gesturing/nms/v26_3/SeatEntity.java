@@ -8,7 +8,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.phys.Vec3;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_19_R3.CraftWorld;
+import org.bukkit.craftbukkit.v1_18_R2.CraftWorld;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -51,5 +51,4 @@ public final class SeatEntity extends ArmorStand {
     @Override public void move(@NotNull MoverType type, @NotNull Vec3 movement) { }
     @Override public boolean hurt(@NotNull DamageSource source, float amount) { return false; }
     @Override public boolean isAffectedByFluids() { return false; }
-    @Override public boolean dismountsUnderwater() { return false; }
 }

@@ -20,10 +20,8 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
-import net.minecraft.network.protocol.game.ClientboundBundlePacket;
 import net.minecraft.network.protocol.game.ClientboundMoveEntityPacket;
-import net.minecraft.network.protocol.game.ClientboundPlayerInfoRemovePacket;
-import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundPlayerInfoPacket;
 import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
 import net.minecraft.network.protocol.game.ClientboundRotateHeadPacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
@@ -79,10 +77,10 @@ final class PoseNpc {
     private final BlockPos bedPos;
     private final Direction direction;
     private final Map<ServerPlayer, Integer> viewers = new HashMap<>();
-    private final ClientboundPlayerInfoUpdatePacket addInfoPacket;
-    private final ClientboundPlayerInfoRemovePacket removeInfoPacket;
+    private final ClientboundPlayerInfoPacket addInfoPacket;
+    private final ClientboundPlayerInfoPacket removeInfoPacket;
     private final ClientboundRemoveEntitiesPacket removePacket;
-    private ClientboundBundlePacket bundle;
+    private List<Packet<ClientGamePacketListener>> bundle;
     private ClientboundTeleportEntityPacket teleportPacket;
     private ClientboundBlockUpdatePacket bedPacket;
     private ClientboundSetEquipmentPacket hiddenEquipment;
@@ -94,7 +92,7 @@ final class PoseNpc {
         this.kind = kind;
         this.lying = kind == Kind.LAY || kind == Kind.LEGS_UP;
         this.seatPos = seatPos;
-        bedPos = BlockPos.containing(seatPos.x, level.getMinBuildHeight(), seatPos.z);
+        bedPos = new BlockPos(seatPos.x, level.dimensionType().minY(), seatPos.z);
 
         GameProfile profile = copyProfile(player.getGameProfile());
         npc = new ServerPlayer(level.getServer(), level, profile);
@@ -109,11 +107,8 @@ final class PoseNpc {
         direction = directionOf(seatYaw);
         if (lying) bedPacket = new ClientboundBlockUpdatePacket(bedPos, Blocks.WHITE_BED.defaultBlockState()
                 .setValue(BedBlock.FACING, direction.getOpposite()).setValue(BedBlock.PART, BedPart.HEAD));
-        addInfoPacket = new ClientboundPlayerInfoUpdatePacket(EnumSet.of(
-                ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER, ClientboundPlayerInfoUpdatePacket.Action.INITIALIZE_CHAT,
-                ClientboundPlayerInfoUpdatePacket.Action.UPDATE_GAME_MODE, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY,
-                ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME), Collections.singletonList(npc));
-        removeInfoPacket = new ClientboundPlayerInfoRemovePacket(Collections.singletonList(npc.getUUID()));
+        addInfoPacket = new ClientboundPlayerInfoPacket(ClientboundPlayerInfoPacket.Action.ADD_PLAYER, npc);
+        removeInfoPacket = new ClientboundPlayerInfoPacket(ClientboundPlayerInfoPacket.Action.REMOVE_PLAYER, npc);
         removePacket = new ClientboundRemoveEntitiesPacket(npc.getId());
         if (lying) teleportPacket = new ClientboundTeleportEntityPacket(npc);
         if (kind == Kind.LEGS_UP) {
@@ -154,25 +149,24 @@ final class PoseNpc {
         if (kind == Kind.LEGS_UP) {
             attach(npc, vehicleEntity);
             packets.add(addEntity(vehicleEntity));
-            packets.add(new ClientboundSetEntityDataPacket(vehicleEntity.getId(), vehicleEntity.getEntityData().getNonDefaultValues()));
+            packets.add(new ClientboundSetEntityDataPacket(vehicleEntity.getId(), vehicleEntity.getEntityData(), true));
             packets.add(new ClientboundSetPassengersPacket(vehicleEntity));
         }
         if (lying) packets.add(bedPacket);
-        packets.add(new ClientboundSetEntityDataPacket(npc.getId(),
-                npc.getEntityData().isDirty() ? npc.getEntityData().packDirty() : npc.getEntityData().getNonDefaultValues()));
+        packets.add(new ClientboundSetEntityDataPacket(npc.getId(), npc.getEntityData(), true));
         packets.add(new ClientboundUpdateAttributesPacket(npc.getId(), player.getAttributes().getSyncableAttributes()));
         if (kind == Kind.SPIN) packets.add(new ClientboundMoveEntityPacket.PosRot(npc.getId(), (short) 0, (short) 0, (short) 0, (byte) 0, fixedRotation(-90f), true));
         packets.add(equipmentPacket());
-        bundle = new ClientboundBundlePacket(packets);
+        bundle = packets;
         refreshViewers();
         setEquipmentVisibility(false);
 
         attach(hideNameEntity, npc);
         List<Packet<ClientGamePacketListener>> own = new ArrayList<>();
         own.add(addEntity(hideNameEntity));
-        own.add(new ClientboundSetEntityDataPacket(hideNameEntity.getId(), hideNameEntity.getEntityData().getNonDefaultValues()));
+        own.add(new ClientboundSetEntityDataPacket(hideNameEntity.getId(), hideNameEntity.getEntityData(), true));
         own.add(new ClientboundSetPassengersPacket(npc));
-        player.connection.send(new ClientboundBundlePacket(own));
+        for (Packet<?> own1 : own) player.connection.send(own1);
     }
 
     void tick() {
@@ -206,7 +200,7 @@ final class PoseNpc {
         for (ServerPlayer other : current) {
             if (!viewers.containsKey(other)) {
                 viewers.put(other, 0);
-                other.connection.send(bundle);
+                for (Packet<ClientGamePacketListener> packet : bundle) other.connection.send(packet);
             }
         }
         for (ServerPlayer other : List.copyOf(viewers.keySet())) {
@@ -265,7 +259,7 @@ final class PoseNpc {
 
     private static ClientboundAddEntityPacket addEntity(Entity entity) {
         return new ClientboundAddEntityPacket(entity.getId(), entity.getUUID(), entity.getX(), entity.getY(), entity.getZ(),
-                entity.getXRot(), entity.getYRot(), entity.getType(), 0, entity.getDeltaMovement(), entity.getYHeadRot());
+                entity.getXRot(), entity.getYRot(), entity.getType(), 0, entity.getDeltaMovement());
     }
 
     private static void attach(Entity passenger, Entity vehicle) {

@@ -11,7 +11,6 @@ final class SeatEntity extends ArmorStand {
     SeatEntity(ServerLevel level, double x, double y, double z) {
         super(level, x, y, z);
         setNoGravity(true);
-        setNoBasePlate(true);
     }
 
     @Override

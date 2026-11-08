@@ -8,8 +8,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.commands.CommandSourceStack;
@@ -33,14 +32,10 @@ public final class GesturingFabric implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> registerCommands(dispatcher));
+        CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> registerCommands(dispatcher));
         ServerTickEvents.END_SERVER_TICK.register(this::tick);
-        ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {
-            if (entity instanceof ServerPlayer player) stop(player, false);
-            return true;
-        });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> stop(handler.player, false));
-        System.out.println("[Gesturing] Fabric 0.3.2 initialized for Minecraft 1.19.4.");
+        System.out.println("[Gesturing] Fabric 0.3.2 initialized for Minecraft 1.18.2.");
     }
 
     private void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -66,10 +61,10 @@ public final class GesturingFabric implements ModInitializer {
     private int sit(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         ServerPlayer player = source.getPlayerOrException();
         stop(player, false);
-        GestureState state = seat(player, null, Pose.SITTING);
+        GestureState state = seat(player, null, Pose.STANDING);
         if (state == null) return 0;
         active.put(player.getUUID(), state);
-        player.sendSystemMessage(Component.literal("앉았습니다. 웅크리거나 /stand를 입력하면 일어납니다."));
+        player.sendMessage(new net.minecraft.network.chat.TextComponent("앉았습니다. 웅크리거나 /stand를 입력하면 일어납니다."), net.minecraft.Util.NIL_UUID);
         return 1;
     }
 
@@ -79,7 +74,7 @@ public final class GesturingFabric implements ModInitializer {
         ServerLevel level = (ServerLevel) player.level;
         BlockState state = level.getBlockState(support);
         if (state.isAir() || !state.getFluidState().isEmpty()) {
-            player.sendSystemMessage(Component.literal("앉을 수 있는 블록을 찾지 못했습니다."));
+            player.sendMessage(new net.minecraft.network.chat.TextComponent("앉을 수 있는 블록을 찾지 못했습니다."), net.minecraft.Util.NIL_UUID);
             return null;
         }
         Offset offset = SeatGeometry.offsetFor(state);
@@ -94,7 +89,7 @@ public final class GesturingFabric implements ModInitializer {
         if (!rider.startRiding(seat, true) || !level.addFreshEntity(seat)) {
             rider.stopRiding();
             seat.discard();
-            player.sendSystemMessage(Component.literal("좌석을 만들지 못했습니다."));
+            player.sendMessage(new net.minecraft.network.chat.TextComponent("좌석을 만들지 못했습니다."), net.minecraft.Util.NIL_UUID);
             return null;
         }
         return new GestureState(player.getPose(), pose, seat, returnPos, null, null, new Vec3(x, y, z), yaw);
@@ -131,7 +126,7 @@ public final class GesturingFabric implements ModInitializer {
         PoseNpc npc = new PoseNpc(player, state.seatPos(), state.seatYaw(), kind);
         npc.spawn();
         active.put(player.getUUID(), state.withNpc(npc));
-        player.sendSystemMessage(Component.literal(message + " 웅크리거나 /stand를 입력하면 일어납니다."));
+        player.sendMessage(new net.minecraft.network.chat.TextComponent(message + " 웅크리거나 /stand를 입력하면 일어납니다."), net.minecraft.Util.NIL_UUID);
         return 1;
     }
 
@@ -145,7 +140,7 @@ public final class GesturingFabric implements ModInitializer {
         }
         player.setPose(Pose.SWIMMING);
         active.put(player.getUUID(), state);
-        player.sendSystemMessage(Component.literal("기어갑니다. 이동하거나 웅크리면 종료됩니다."));
+        player.sendMessage(new net.minecraft.network.chat.TextComponent("기어갑니다. 이동하거나 웅크리면 종료됩니다."), net.minecraft.Util.NIL_UUID);
         return 1;
     }
 
@@ -159,12 +154,12 @@ public final class GesturingFabric implements ModInitializer {
     private int stand(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         ServerPlayer player = source.getPlayerOrException();
         if (stop(player, true)) return 1;
-        player.sendSystemMessage(Component.literal("현재 동작 중이 아닙니다."));
+        player.sendMessage(new net.minecraft.network.chat.TextComponent("현재 동작 중이 아닙니다."), net.minecraft.Util.NIL_UUID);
         return 0;
     }
 
     private int message(CommandSourceStack source, String text) {
-        source.sendFailure(Component.literal(text));
+        source.sendFailure(new net.minecraft.network.chat.TextComponent(text));
         return 0;
     }
 
@@ -184,7 +179,7 @@ public final class GesturingFabric implements ModInitializer {
             player.connection.send(new ClientboundBlockUpdatePacket(player.level, state.ceiling()));
         }
         if (!player.isRemoved() && state.seat() == null) player.setPose(state.originalPose());
-        if (notify) player.sendSystemMessage(Component.literal("동작을 종료했습니다."));
+        if (notify) player.sendMessage(new net.minecraft.network.chat.TextComponent("동작을 종료했습니다."), net.minecraft.Util.NIL_UUID);
         return true;
     }
 
@@ -194,6 +189,7 @@ public final class GesturingFabric implements ModInitializer {
             if (player == null) continue;
             GestureState state = entry.getValue();
             boolean dismounted = state.seat() != null && player.getVehicle() != state.seat();
+            if (player.hurtTime > 0) { stop(player, false); continue; }
             if (player.isShiftKeyDown() || dismounted
                     || (state.seat() == null && player.position().distanceToSqr(state.startedAt()) > 0.64d)) {
                 stop(player, false);
@@ -210,7 +206,6 @@ public final class GesturingFabric implements ModInitializer {
     private static void configureSeat(ArmorStand seat, float yaw) {
         seat.setInvisible(true);
         seat.setNoGravity(true);
-        seat.setNoBasePlate(true);
         seat.getEntityData().set(ArmorStand.DATA_CLIENT_FLAGS,
                 (byte) (ArmorStand.CLIENT_FLAG_MARKER | ArmorStand.CLIENT_FLAG_SMALL | ArmorStand.CLIENT_FLAG_NO_BASEPLATE));
         seat.setYRot(yaw);

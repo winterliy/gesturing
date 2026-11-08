@@ -8,7 +8,7 @@ import java.util.List;
 import net.minecraft.world.entity.AreaEffectCloud;
 import net.minecraft.world.entity.Entity;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_19_R3.CraftWorld;
+import org.bukkit.craftbukkit.v1_18_R2.CraftWorld;
 
 /**
  * Copyright (C) Gecolay and contributors.
@@ -38,7 +38,6 @@ public final class PoseHelperEntity extends AreaEffectCloud {
     }
 
     @Override public void tick() { }
-    @Override public boolean dismountsUnderwater() { return false; }
 
     /** Links {@code passenger} to this entity without the server-side riding logic (packet-only use). */
     public void attachPassenger(Entity passenger) {

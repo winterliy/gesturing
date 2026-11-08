@@ -1,6 +1,6 @@
 plugins {
     java
-    id("io.papermc.paperweight.userdev") version "2.0.0-beta.23"
+    id("io.papermc.paperweight.userdev") version "1.7.7"
 }
 
 group = "dev.ledge"
@@ -12,14 +12,14 @@ repositories {
 }
 
 dependencies {
-    paperweight.paperDevBundle("1.19.4-R0.1-SNAPSHOT")
+    paperweight.paperDevBundle("1.18.2-R0.1-SNAPSHOT")
     testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 
 java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+    toolchain.languageVersion.set(JavaLanguageVersion.of(17))
 }
 
 tasks.withType<JavaCompile>().configureEach {
@@ -37,3 +37,4 @@ tasks.processResources {
         expand("version" to project.version)
     }
 }
+
