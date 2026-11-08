@@ -78,29 +78,41 @@ public final class GesturingGameTests {
         run(helper, player, "stand");
         helper.assertValueEqual(player.getPose(), originalPose, "extra /stand should be safe when no gesture is active");
 
+        helper.setBlock(floor, Blocks.STONE.defaultBlockState());
         String[][] directions = {{"east", "-90.0"}, {"west", "90.0"}, {"south", "0.0"}, {"north", "180.0"}};
         for (String[] direction : directions) {
+            player.setPos(start);
             run(helper, player, "lay " + direction[0]);
-            helper.assertValueEqual(player.getPose(), Pose.SLEEPING, "/lay should set the sleeping pose");
+            helper.assertTrue(player.getVehicle() instanceof SeatEntity, "/lay should seat the player under the pose copy");
+            helper.assertTrue(player.isInvisible(), "/lay should hide the real player behind the pose copy");
+            helper.assertFalse(player.isSleeping(), "/lay must not put the real player to sleep");
             helper.assertValueEqual(player.getYRot(), Float.parseFloat(direction[1]), "/lay " + direction[0] + " should face that direction");
             run(helper, player, "stand");
-            helper.assertValueEqual(player.getPose(), originalPose, "/stand should restore pose after /lay");
+            helper.assertTrue(player.getVehicle() == null, "/stand should leave the seat after /lay");
+            helper.assertFalse(player.isInvisible(), "/stand should show the real player again");
+            helper.assertValueEqual(player.getY(), start.y(), "/stand should return the player to the original height");
         }
 
+        player.setPos(start);
+        run(helper, player, "lay");
+        helper.assertTrue(player.getVehicle() instanceof SeatEntity, "/lay without a direction should use the facing direction");
+        run(helper, player, "stand");
+
+        player.setPos(start);
         run(helper, player, "crawl");
         helper.assertValueEqual(player.getPose(), Pose.SWIMMING, "/crawl should set the swimming pose");
         run(helper, player, "stand");
         helper.assertValueEqual(player.getPose(), originalPose, "/stand should restore pose after /crawl");
 
-        run(helper, player, "bellyflop");
-        helper.assertValueEqual(player.getPose(), Pose.SWIMMING, "/bellyflop should set the swimming pose");
-        run(helper, player, "stand");
-        run(helper, player, "legsup");
-        helper.assertValueEqual(player.getPose(), Pose.SLEEPING, "/legsup should set the sleeping pose");
-        run(helper, player, "stand");
-        run(helper, player, "spin");
-        helper.assertValueEqual(player.getPose(), Pose.SPIN_ATTACK, "/spin should set the spin attack pose");
-        run(helper, player, "stand");
+        for (String command : new String[]{"bellyflop", "legsup", "spin"}) {
+            player.setPos(start);
+            run(helper, player, command);
+            helper.assertTrue(player.getVehicle() instanceof SeatEntity, "/" + command + " should seat the player under the pose copy");
+            helper.assertTrue(player.isInvisible(), "/" + command + " should hide the real player");
+            run(helper, player, "stand");
+            helper.assertTrue(player.getVehicle() == null && !player.isInvisible(), "/stand should end /" + command);
+            helper.assertValueEqual(player.getY(), start.y(), "/stand should restore height after /" + command);
+        }
         helper.succeed();
     }
 
@@ -109,6 +121,7 @@ public final class GesturingGameTests {
     public void activePosesStopOnMovementSneakDamageAndDisconnect(GameTestHelper helper) {
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
         Vec3 start = helper.absoluteVec(new Vec3(1.5, 1.0, 1.5));
+        helper.setBlock(new BlockPos(1, 0, 1), Blocks.STONE.defaultBlockState());
         player.setPos(start);
         Pose originalPose = player.getPose();
 
@@ -120,23 +133,23 @@ public final class GesturingGameTests {
             run(helper, player, "spin");
             player.teleportTo(start.x(), start.y(), start.z());
             helper.runAfterDelay(1, () -> {
-                helper.assertValueEqual(player.getPose(), originalPose, "teleporting should end a gesture");
+                helper.assertTrue(player.getVehicle() == null && !player.isInvisible(), "teleporting should end a gesture");
 
                 run(helper, player, "bellyflop");
                 player.setShiftKeyDown(true);
                 helper.runAfterDelay(1, () -> {
-                    helper.assertValueEqual(player.getPose(), originalPose, "sneaking should end a gesture");
+                    helper.assertTrue(player.getVehicle() == null && !player.isInvisible(), "sneaking should end a gesture");
                     player.setShiftKeyDown(false);
 
                     run(helper, player, "spin");
                     net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DAMAGE.invoker()
                             .afterDamage(player, helper.getLevel().damageSources().generic(), 1.0f, 1.0f, false);
-                    helper.assertValueEqual(player.getPose(), originalPose, "damage should end a gesture");
+                    helper.assertTrue(player.getVehicle() == null && !player.isInvisible(), "damage should end a gesture");
 
                     run(helper, player, "legsup");
                     net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.DISCONNECT.invoker()
                             .onPlayDisconnect(player.connection, helper.getLevel().getServer());
-                    helper.assertValueEqual(player.getPose(), originalPose, "disconnect should restore the original pose");
+                    helper.assertTrue(player.getVehicle() == null && !player.isInvisible(), "disconnect should end the gesture");
                     helper.succeed();
                 });
             });

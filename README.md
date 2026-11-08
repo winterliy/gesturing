@@ -16,9 +16,14 @@ GPL-3.0-only; attribution and license are in
 - `/sit` — sit on the supporting block below you, including stairs and slabs.
 - `/sit playertoggle` — allow or prevent other players from sitting on you.
 - `/sit toggle` — toggle block sitting.
-- `/lay <east|west|south|north>` — lie down facing the selected direction.
+- `/lay [east|west|south|north]` — lie down; without a direction you lie facing where you look.
 - `/bellyflop`, `/legsup`, `/spin`, `/crawl` — start the corresponding pose.
-- `/stand` — stop the current gesture and restore the previous pose.
+- `/stand` — stop the current gesture and return to the spot you stood on before it.
+
+`/lay`, `/legsup`, `/bellyflop` and `/spin` work like GSit: you sit on an invisible seat while every nearby
+player (you included) sees a packet-only copy of you in the pose. No bed is placed in the world, the real
+player never sleeps, and there is no bed screen, darkening, spawn-point change or sleep advancement.
+`/crawl` sends a client-only barrier above your head so the client itself enters the crawling pose.
 
 Moving, sneaking, taking damage, teleporting, or leaving the server also ends
 the pose. The four directions are available through tab completion.
@@ -51,49 +56,25 @@ and disconnect.
 
 ## Verification
 
-### Current status: 0.3.2
+### In-game check (2026-11-08, branch `26.3`)
 
-Gesturing 0.3.2 is released for Minecraft 26.3. The release includes the
-Paper/GLAP plugin and Fabric server mod:
+A real Minecraft 26.3 client (offline test account) joined an isolated Paper 26.3 build 218 server and the
+Fabric dev server. Every command was typed in chat and checked on third-person screenshots:
 
-- [GitHub release](https://github.com/winterliy/gesturing/releases/tag/v0.3.2)
-- [Paper/GLAP plugin JAR](https://github.com/winterliy/gesturing/releases/download/v0.3.2/gesturing-0.3.2.jar)
-- [Fabric server mod JAR](https://github.com/winterliy/gesturing/releases/download/v0.3.2/gesturing-fabric-0.3.2.jar)
+| Command | Paper 26.3 | Fabric 26.3 |
+|---|---|---|
+| `/sit` | seated, "Press Left Shift to dismount" | seated |
+| `/lay`, `/lay <direction>` | lying copy, no bed / bed screen / darkening | lying copy |
+| `/legsup` | lying copy with legs up | lying copy with legs up |
+| `/bellyflop` | face-down copy | face-down copy |
+| `/spin` | riptide spin copy | riptide spin copy |
+| `/crawl` | crawling pose | crawling pose |
+| `/stand` height | back to 151.0 from 150.375 | back to 151.0 from 150.375 |
 
-The latest changes align sitting direction with directional support blocks and
-expand block, command, and pose-cleanup coverage.
+- Fabric GameTests: all 3 required tests pass (`JAVA_TOOL_OPTIONS=-Dfabric-api.gametest=true ./gradlew -p fabric runServer`).
+- The pose copy uses the player's own skin data; offline test accounts have none, so the copy shows a default skin.
 
-### Completed checks
+### Not yet checked
 
-- `./gradlew clean test build` — passed.
-- `./gradlew -p fabric clean test build` — passed.
-- Fabric 26.3 in-server GameTests — all 3 required tests passed. The tests
-  execute registered commands with a mock player and cover full blocks,
-  bottom/top slabs, stairs, directional blocks, all four `/lay` directions,
-  poses, invalid input, and cleanup after movement, teleport, sneaking, damage
-  notification, and disconnect.
-- Paper 26.3 and GLAP 26.3 startup checks — both loaded and enabled the 0.3.2
-  plugin. All seven command help entries were present, and console invocation
-  correctly rejected player-only commands.
-
-Run the Fabric in-server command tests with:
-
-```sh
-JAVA_TOOL_OPTIONS=-Dfabric-api.gametest=true ./gradlew -p fabric runServer
-```
-
-### Remaining validation plan
-
-- [ ] Join Paper and GLAP with a Minecraft 26.3 client and visually try `/sit`,
-  `/sit toggle`, all four `/lay` directions, `/bellyflop`, `/legsup`, `/spin`,
-  `/crawl`, and `/stand`.
-- [ ] On Paper and GLAP, try sitting on stairs, both slab halves, full blocks,
-  and directional blocks facing north, south, east, and west; confirm the seat
-  position and facing look right in-game.
-- [ ] Verify Paper/GLAP player-to-player sitting, `/sit playertoggle`, and
-  permission behavior with both permitted and unpermitted players.
-- [ ] Join a Fabric 26.3 server with a client and confirm pose and seat updates
-  are visible, then check that movement, sneaking, damage, teleport, and
-  disconnect restore the player as expected.
-- [ ] Check tab completion and command behavior with a regular player account
-  on both implementations.
+- Player-to-player sitting and `/sit playertoggle` with two real players (Paper only).
+- A second observer player watching someone else's pose.

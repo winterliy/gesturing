@@ -22,8 +22,11 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 
 public final class GesturingFabric implements ModInitializer {
     private final Map<UUID, GestureState> active = new HashMap<>();
@@ -45,15 +48,16 @@ public final class GesturingFabric implements ModInitializer {
                 .then(Commands.literal("toggle").executes(context -> toggleSit(context.getSource())))
                 .then(Commands.literal("playertoggle").executes(context -> message(context.getSource(), "플레이어 좌석 기능은 서버용 Fabric 판에서 지원하지 않습니다."))));
         dispatcher.register(Commands.literal("lay")
+                .executes(context -> lay(context.getSource(), null))
                 .then(Commands.argument("direction", StringArgumentType.word())
                         .suggests((context, builder) -> {
                             for (String direction : new String[]{"east", "west", "south", "north"}) builder.suggest(direction);
                             return builder.buildFuture();
                         })
                         .executes(context -> lay(context.getSource(), StringArgumentType.getString(context, "direction")))));
-        dispatcher.register(Commands.literal("bellyflop").executes(context -> pose(context.getSource(), Pose.SWIMMING, "엎드렸습니다.")));
-        dispatcher.register(Commands.literal("legsup").executes(context -> pose(context.getSource(), Pose.SLEEPING, "다리를 올리고 누웠습니다.")));
-        dispatcher.register(Commands.literal("spin").executes(context -> pose(context.getSource(), Pose.SPIN_ATTACK, "회전을 시작했습니다.")));
+        dispatcher.register(Commands.literal("bellyflop").executes(context -> npcPose(context.getSource().getPlayerOrException(), PoseNpc.Kind.BELLYFLOP, null, "엎드렸습니다.")));
+        dispatcher.register(Commands.literal("legsup").executes(context -> npcPose(context.getSource().getPlayerOrException(), PoseNpc.Kind.LEGS_UP, null, "다리를 올리고 누웠습니다.")));
+        dispatcher.register(Commands.literal("spin").executes(context -> npcPose(context.getSource().getPlayerOrException(), PoseNpc.Kind.SPIN, null, "회전을 시작했습니다.")));
         dispatcher.register(Commands.literal("crawl").executes(context -> toggleCrawl(context.getSource())));
         dispatcher.register(Commands.literal("stand").executes(context -> stand(context.getSource())));
     }
@@ -61,18 +65,28 @@ public final class GesturingFabric implements ModInitializer {
     private int sit(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         ServerPlayer player = source.getPlayerOrException();
         stop(player, false);
+        GestureState state = seat(player, null, Pose.SITTING);
+        if (state == null) return 0;
+        active.put(player.getUUID(), state);
+        player.sendSystemMessage(Component.literal("앉았습니다. 웅크리거나 /stand를 입력하면 일어납니다."));
+        return 1;
+    }
+
+    /** Mounts the player on an invisible seat on the supporting block; yawOverride is used for non-directional blocks. */
+    private GestureState seat(ServerPlayer player, Float yawOverride, Pose pose) {
         BlockPos support = player.blockPosition().below();
         ServerLevel level = player.level();
         BlockState state = level.getBlockState(support);
         if (state.isAir() || !state.getFluidState().isEmpty()) {
             player.sendSystemMessage(Component.literal("앉을 수 있는 블록을 찾지 못했습니다."));
-            return 0;
+            return null;
         }
         Offset offset = SeatGeometry.offsetFor(state);
-        float yaw = SeatGeometry.hasHorizontalFacing(state) ? offset.yaw() : player.getYRot();
+        float yaw = SeatGeometry.hasHorizontalFacing(state) ? offset.yaw() : yawOverride != null ? yawOverride : player.getYRot();
         double x = support.getX() + offset.x();
         double y = support.getY() + offset.y() - 0.025d;
         double z = support.getZ() + offset.z();
+        Vec3 returnPos = player.position();
         ArmorStand seat = new SeatEntity(level, x, y, z);
         configureSeat(seat, yaw);
         Entity rider = player;
@@ -80,22 +94,21 @@ public final class GesturingFabric implements ModInitializer {
             rider.stopRiding();
             seat.discard();
             player.sendSystemMessage(Component.literal("좌석을 만들지 못했습니다."));
-            return 0;
+            return null;
         }
-        GestureState stateBeforeSit = GestureState.sitting(player.getPose(), seat, player.position());
-        active.put(player.getUUID(), stateBeforeSit);
-        player.sendSystemMessage(Component.literal("앉았습니다. 웅크리거나 /stand를 입력하면 일어납니다."));
-        return 1;
+        return new GestureState(player.getPose(), pose, seat, returnPos, null, null, new Vec3(x, y, z), yaw);
     }
 
     private int toggleSit(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         ServerPlayer player = source.getPlayerOrException();
         GestureState state = active.get(player.getUUID());
-        if (state != null && state.seat() != null) return stand(source);
+        if (state != null && state.seat() != null && state.npc() == null) return stand(source);
         return sit(source);
     }
 
     private int lay(CommandSourceStack source, String rawDirection) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        if (rawDirection == null) return npcPose(player, PoseNpc.Kind.LAY, null, "누웠습니다.");
         String direction = rawDirection.toLowerCase(Locale.ROOT);
         Float yaw = switch (direction) {
             case "south" -> 0.0f;
@@ -105,29 +118,41 @@ public final class GesturingFabric implements ModInitializer {
             default -> null;
         };
         if (yaw == null) return message(source, "방향은 east, west, south, north 중 하나여야 합니다.");
-        ServerPlayer player = source.getPlayerOrException();
         player.setYRot(yaw);
-        player.setXRot(0.0f);
-        return pose(player, Pose.SLEEPING, direction + " 방향으로 누웠습니다.");
+        player.setYHeadRot(yaw);
+        return npcPose(player, PoseNpc.Kind.LAY, yaw, direction + " 방향으로 누웠습니다.");
     }
 
-    private int pose(CommandSourceStack source, Pose pose, String message) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        return pose(source.getPlayerOrException(), pose, message);
-    }
-
-    private int pose(ServerPlayer player, Pose pose, String message) {
+    private int npcPose(ServerPlayer player, PoseNpc.Kind kind, Float yaw, String message) {
         stop(player, false);
-        active.put(player.getUUID(), GestureState.pose(player.getPose(), pose, player.position()));
-        player.setPose(pose);
-        player.sendSystemMessage(Component.literal(message + " 이동하거나 웅크리면 종료됩니다."));
+        GestureState state = seat(player, yaw, kind == PoseNpc.Kind.SPIN ? Pose.SPIN_ATTACK : Pose.SLEEPING);
+        if (state == null) return 0;
+        PoseNpc npc = new PoseNpc(player, state.seatPos(), state.seatYaw(), kind);
+        npc.spawn();
+        active.put(player.getUUID(), state.withNpc(npc));
+        player.sendSystemMessage(Component.literal(message + " 웅크리거나 /stand를 입력하면 일어납니다."));
+        return 1;
+    }
+
+    private int crawl(ServerPlayer player) {
+        stop(player, false);
+        GestureState state = new GestureState(player.getPose(), Pose.SWIMMING, null, player.position(), null, null, null, 0f);
+        BlockPos ceiling = player.blockPosition().above();
+        if (player.level().getBlockState(ceiling).isAir()) {
+            player.connection.send(new ClientboundBlockUpdatePacket(ceiling, Blocks.BARRIER.defaultBlockState()));
+            state = state.withCeiling(ceiling);
+        }
+        player.setPose(Pose.SWIMMING);
+        active.put(player.getUUID(), state);
+        player.sendSystemMessage(Component.literal("기어갑니다. 이동하거나 웅크리면 종료됩니다."));
         return 1;
     }
 
     private int toggleCrawl(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         ServerPlayer player = source.getPlayerOrException();
         GestureState state = active.get(player.getUUID());
-        if (state != null && state.pose() == Pose.SWIMMING) return stand(source);
-        return pose(player, Pose.SWIMMING, "기어갑니다.");
+        if (state != null && state.pose() == Pose.SWIMMING && state.seat() == null) return stand(source);
+        return crawl(player);
     }
 
     private int stand(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
@@ -145,11 +170,19 @@ public final class GesturingFabric implements ModInitializer {
     private boolean stop(ServerPlayer player, boolean notify) {
         GestureState state = active.remove(player.getUUID());
         if (state == null) return false;
+        if (state.npc() != null) state.npc().remove();
         if (state.seat() != null) {
             player.stopRiding();
             if (state.seat().isAlive()) state.seat().discard();
+            if (!player.isRemoved() && player.isAlive()) {
+                Vec3 back = state.startedAt();
+                player.connection.teleport(back.x, back.y, back.z, player.getYRot(), player.getXRot());
+            }
         }
-        if (!player.isRemoved()) player.setPose(state.originalPose());
+        if (state.ceiling() != null && !player.isRemoved()) {
+            player.connection.send(new ClientboundBlockUpdatePacket(player.level(), state.ceiling()));
+        }
+        if (!player.isRemoved() && state.seat() == null) player.setPose(state.originalPose());
         if (notify) player.sendSystemMessage(Component.literal("동작을 종료했습니다."));
         return true;
     }
@@ -159,9 +192,14 @@ public final class GesturingFabric implements ModInitializer {
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
             if (player == null) continue;
             GestureState state = entry.getValue();
-            if (player.isShiftKeyDown() || (state.seat() == null && player.position().distanceToSqr(state.startedAt()) > 0.01d)) {
+            boolean dismounted = state.seat() != null && player.getVehicle() != state.seat();
+            if (player.isShiftKeyDown() || dismounted
+                    || (state.seat() == null && player.position().distanceToSqr(state.startedAt()) > 0.64d)) {
                 stop(player, false);
-            } else if (state.seat() != null && state.seat().getFirstPassenger() != null) {
+                continue;
+            }
+            if (state.npc() != null) state.npc().tick();
+            if (state.seat() != null) {
                 state.seat().setYRot(player.getYRot());
                 state.seat().setYBodyRot(player.getYRot());
             }
@@ -178,12 +216,13 @@ public final class GesturingFabric implements ModInitializer {
         seat.setYBodyRot(yaw);
     }
 
-    private record GestureState(Pose originalPose, Pose pose, ArmorStand seat, net.minecraft.world.phys.Vec3 startedAt) {
-        static GestureState sitting(Pose original, ArmorStand seat, net.minecraft.world.phys.Vec3 start) {
-            return new GestureState(original, Pose.SITTING, seat, start);
+    private record GestureState(Pose originalPose, Pose pose, ArmorStand seat, Vec3 startedAt,
+                                PoseNpc npc, BlockPos ceiling, Vec3 seatPos, float seatYaw) {
+        GestureState withNpc(PoseNpc npc) {
+            return new GestureState(originalPose, pose, seat, startedAt, npc, ceiling, seatPos, seatYaw);
         }
-        static GestureState pose(Pose original, Pose pose, net.minecraft.world.phys.Vec3 start) {
-            return new GestureState(original, pose, null, start);
+        GestureState withCeiling(BlockPos ceiling) {
+            return new GestureState(originalPose, pose, seat, startedAt, npc, ceiling, seatPos, seatYaw);
         }
     }
 }
