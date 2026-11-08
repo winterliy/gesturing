@@ -1,8 +1,8 @@
 name: Gesturing
 version: '${version}'
 main: dev.ledge.gesturing.GesturingPlugin
-api-version: '26.3'
-description: Standalone Paper/GLAP 26.3 gesture and seating plugin.
+api-version: '26.2'
+description: Standalone Paper/GLAP 26.2 gesture and seating plugin.
 commands:
   sit:
     description: Sit on the supporting block or toggle player sitting.

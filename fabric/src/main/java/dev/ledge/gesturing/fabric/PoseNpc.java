@@ -31,7 +31,6 @@ import net.minecraft.network.protocol.game.ClientboundSetEquipmentPacket;
 import net.minecraft.network.protocol.game.ClientboundSetPassengersPacket;
 import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket;
 import net.minecraft.network.protocol.game.ClientboundUpdateAttributesPacket;
-import net.minecraft.network.protocol.game.VecDelta;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.server.level.ServerLevel;
@@ -163,7 +162,7 @@ final class PoseNpc {
         packets.add(new ClientboundSetEntityDataPacket(npc.getId(),
                 npc.getEntityData().isDirty() ? npc.getEntityData().packDirty() : npc.getEntityData().getNonDefaultValues()));
         packets.add(new ClientboundUpdateAttributesPacket(npc.getId(), player.getAttributes().getSyncableAttributes()));
-        if (kind == Kind.SPIN) packets.add(new ClientboundMoveEntityPacket.PosRot(npc.getId(), VecDelta.ZERO, (byte) 0, fixedRotation(-90f), true));
+        if (kind == Kind.SPIN) packets.add(new ClientboundMoveEntityPacket.PosRot(npc.getId(), (short) 0, (short) 0, (short) 0, (byte) 0, fixedRotation(-90f), true));
         packets.add(equipmentPacket());
         bundle = new ClientboundBundlePacket(packets);
         refreshViewers();
@@ -228,7 +227,7 @@ final class PoseNpc {
             if (directionCache == fixed) return;
             directionCache = fixed;
             ClientboundRotateHeadPacket head = new ClientboundRotateHeadPacket(npc, fixed);
-            ClientboundMoveEntityPacket.PosRot move = new ClientboundMoveEntityPacket.PosRot(npc.getId(), VecDelta.ZERO, fixed, (byte) 0, true);
+            ClientboundMoveEntityPacket.PosRot move = new ClientboundMoveEntityPacket.PosRot(npc.getId(), (short) 0, (short) 0, (short) 0, fixed, (byte) 0, true);
             for (ServerPlayer viewer : viewers.keySet()) { viewer.connection.send(head); viewer.connection.send(move); }
             return;
         }
