@@ -27,7 +27,7 @@ public final class SeatEntity extends ArmorStand {
         setInvisible(true);
         setNoGravity(true);
         setMarker(true);
-        setInvulnerable(true);
+        setPermanentlyInvulnerable(true);
         setSmall(true);
         setNoBasePlate(true);
         setRot(location.getYaw(), location.getPitch());
