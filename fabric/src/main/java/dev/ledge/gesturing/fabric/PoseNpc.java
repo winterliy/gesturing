@@ -108,7 +108,7 @@ final class PoseNpc {
         npc.absSnapTo(seatPos.x, offset, seatPos.z, 0f, 0f);
 
         direction = directionOf(seatYaw);
-        if (lying) bedPacket = new ClientboundBlockUpdatePacket(bedPos, Blocks.BED.white().defaultBlockState()
+        if (lying) bedPacket = new ClientboundBlockUpdatePacket(bedPos, Blocks.WHITE_BED.defaultBlockState()
                 .setValue(BedBlock.FACING, direction.getOpposite()).setValue(BedBlock.PART, BedPart.HEAD));
         addInfoPacket = new ClientboundPlayerInfoUpdatePacket(EnumSet.of(
                 ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER, ClientboundPlayerInfoUpdatePacket.Action.INITIALIZE_CHAT,
