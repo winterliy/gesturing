@@ -51,7 +51,7 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
             registered.setExecutor(this);
             if (command.equals("lay")) registered.setTabCompleter(this);
         }
-        getLogger().info("Gesturing 0.3.2 enabled for Paper/GLAP 26.3.");
+        getLogger().info("Gesturing " + getPluginMeta().getVersion() + " enabled for Paper " + org.bukkit.Bukkit.getMinecraftVersion() + ".");
     }
 
     @Override public void onDisable() {

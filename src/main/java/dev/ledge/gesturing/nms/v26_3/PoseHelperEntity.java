@@ -23,7 +23,7 @@ public final class PoseHelperEntity extends AreaEffectCloud {
         setRadius(0);
         setDuration(Integer.MAX_VALUE);
         setNoGravity(true);
-        setPermanentlyInvulnerable(true);
+        setInvulnerable(true);
         addTag("gesturing_pose_helper");
         if (vehicleField == null) resolveVehicleField();
     }
