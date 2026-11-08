@@ -37,7 +37,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.HumanoidArm;
-import net.minecraft.world.entity.PositionMoveRotation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Blocks;
@@ -62,10 +61,10 @@ public final class PoseNpc {
     private static final EntityDataAccessor<net.minecraft.world.entity.Pose> POSE_ACCESSOR = EntityDataSerializers.POSE.createAccessor(6);
     private static final EntityDataAccessor<Byte> DATA_FLAG_ACCESSOR = EntityDataSerializers.BYTE.createAccessor(8);
     private static final EntityDataAccessor<Optional<BlockPos>> SLEEP_BLOCK_POS_ACCESSOR = EntityDataSerializers.OPTIONAL_BLOCK_POS.createAccessor(14);
-    private static final EntityDataAccessor<HumanoidArm> MAIN_HAND_ACCESSOR = EntityDataSerializers.HUMANOID_ARM.createAccessor(15);
-    private static final EntityDataAccessor<Byte> SKIN_ACCESSOR = EntityDataSerializers.BYTE.createAccessor(16);
-    private static final EntityDataAccessor<OptionalInt> LEFT_SHOULDER_ACCESSOR = EntityDataSerializers.OPTIONAL_UNSIGNED_INT.createAccessor(19);
-    private static final EntityDataAccessor<OptionalInt> RIGHT_SHOULDER_ACCESSOR = EntityDataSerializers.OPTIONAL_UNSIGNED_INT.createAccessor(20);
+    private static final EntityDataAccessor<Byte> MAIN_HAND_ACCESSOR = EntityDataSerializers.BYTE.createAccessor(18);
+    private static final EntityDataAccessor<Byte> SKIN_ACCESSOR = EntityDataSerializers.BYTE.createAccessor(17);
+    private static final EntityDataAccessor<net.minecraft.nbt.CompoundTag> LEFT_SHOULDER_ACCESSOR = EntityDataSerializers.COMPOUND_TAG.createAccessor(19);
+    private static final EntityDataAccessor<net.minecraft.nbt.CompoundTag> RIGHT_SHOULDER_ACCESSOR = EntityDataSerializers.COMPOUND_TAG.createAccessor(20);
 
     private final SeatEntity seat;
     private final Location seatLocation;
@@ -113,7 +112,7 @@ public final class PoseNpc {
         double offset = height;
         if (lying) offset += 0.1125d * scale;
         if (kind == PoseKind.BELLYFLOP) offset += -0.19d * scale;
-        npc.absSnapTo(seatLocation.getX(), offset, seatLocation.getZ(), 0f, 0f);
+        npc.moveTo(seatLocation.getX(), offset, seatLocation.getZ(), 0f, 0f);
 
         direction = directionOf(seatLocation.getYaw());
         if (lying) bedPacket = new ClientboundBlockUpdatePacket(bedPos, Blocks.WHITE_BED.defaultBlockState()
@@ -124,11 +123,11 @@ public final class PoseNpc {
                 ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME), Collections.singletonList(npc));
         removeInfoPacket = new ClientboundPlayerInfoRemovePacket(Collections.singletonList(npc.getUUID()));
         removePacket = new ClientboundRemoveEntitiesPacket(npc.getId());
-        if (lying) teleportPacket = new ClientboundTeleportEntityPacket(npc.getId(), PositionMoveRotation.of(npc), Set.of(), false);
+        if (lying) teleportPacket = new ClientboundTeleportEntityPacket(npc);
         if (kind == PoseKind.LEGS_UP) {
             vehicleEntity = new PoseHelperEntity(player.getLocation());
             float sleepYaw = direction == Direction.SOUTH ? 270 : direction == Direction.WEST ? 180 : direction == Direction.EAST ? 0 : 90;
-            vehicleEntity.absSnapTo(seatLocation.getX(), height - 0.375d * scale, seatLocation.getZ(), sleepYaw, 0f);
+            vehicleEntity.moveTo(seatLocation.getX(), height - 0.375d * scale, seatLocation.getZ(), sleepYaw, 0f);
         } else vehicleEntity = null;
         hideNameEntity = new PoseHelperEntity(player.getLocation());
     }
@@ -146,8 +145,8 @@ public final class PoseNpc {
         npc.getEntityData().set(SKIN_ACCESSOR, serverPlayer.getEntityData().get(SKIN_ACCESSOR));
         npc.getEntityData().set(LEFT_SHOULDER_ACCESSOR, serverPlayer.getEntityData().get(LEFT_SHOULDER_ACCESSOR));
         npc.getEntityData().set(RIGHT_SHOULDER_ACCESSOR, serverPlayer.getEntityData().get(RIGHT_SHOULDER_ACCESSOR));
-        serverPlayer.getEntityData().set(LEFT_SHOULDER_ACCESSOR, OptionalInt.empty());
-        serverPlayer.getEntityData().set(RIGHT_SHOULDER_ACCESSOR, OptionalInt.empty());
+        serverPlayer.getEntityData().set(LEFT_SHOULDER_ACCESSOR, new net.minecraft.nbt.CompoundTag());
+        serverPlayer.getEntityData().set(RIGHT_SHOULDER_ACCESSOR, new net.minecraft.nbt.CompoundTag());
         serverPlayer.setInvisible(true);
         setEquipmentVisibility(false);
 
@@ -284,7 +283,8 @@ public final class PoseNpc {
     private ServerPlayer createNpc() {
         MinecraftServer server = ((CraftServer) Bukkit.getServer()).getServer();
         ServerLevel level = ((CraftWorld) seatLocation.getWorld()).getHandle();
-        GameProfile profile = new GameProfile(UUID.randomUUID(), seatPlayer.getName(), serverPlayer.getGameProfile().properties());
+        GameProfile profile = new GameProfile(UUID.randomUUID(), seatPlayer.getName());
+        profile.getProperties().putAll(serverPlayer.getGameProfile().getProperties());
         ServerPlayer created = new ServerPlayer(server, level, profile, serverPlayer.clientInformation());
         created.connection = serverPlayer.connection;
         return created;

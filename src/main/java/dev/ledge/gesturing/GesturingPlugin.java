@@ -144,7 +144,6 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
             }
             case SPIN -> {
                 player.setPose(pose, true);
-                player.setRiptiding(true);
             }
             default -> player.setPose(pose, true);
         }
@@ -160,7 +159,6 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
         if (npc != null) npc.remove();
         Location ceiling = ceilings.remove(id);
         if (ceiling != null && player.isOnline()) player.sendBlockChange(ceiling, ceiling.getBlock().getBlockData());
-        if (player.isRiptiding()) player.setRiptiding(false);
     }
 
     private void remember(Player player) { originalPoses.putIfAbsent(player.getUniqueId(), player.getPose()); }

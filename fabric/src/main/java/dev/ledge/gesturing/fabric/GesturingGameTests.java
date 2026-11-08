@@ -1,6 +1,7 @@
 package dev.ledge.gesturing.fabric;
 
-import net.fabricmc.fabric.api.gametest.v1.GameTest;
+import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
+import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.core.Direction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Pose;
@@ -14,8 +15,8 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
 
-public final class GesturingGameTests {
-    @GameTest
+public final class GesturingGameTests implements FabricGameTest {
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     @SuppressWarnings("removal")
     public void commandsSeatAndRestorePose(GameTestHelper helper) {
         BlockPos floor = new BlockPos(1, 0, 1);
@@ -116,7 +117,7 @@ public final class GesturingGameTests {
         helper.succeed();
     }
 
-    @GameTest
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     @SuppressWarnings("removal")
     public void activePosesStopOnMovementSneakDamageAndDisconnect(GameTestHelper helper) {
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
@@ -142,8 +143,8 @@ public final class GesturingGameTests {
                     player.setShiftKeyDown(false);
 
                     run(helper, player, "spin");
-                    net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DAMAGE.invoker()
-                            .afterDamage(player, helper.getLevel().damageSources().generic(), 1.0f, 1.0f, false);
+                    net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.ALLOW_DAMAGE.invoker()
+                            .allowDamage(player, helper.getLevel().damageSources().generic(), 1.0f);
                     helper.assertTrue(player.getVehicle() == null && !player.isInvisible(), "damage should end a gesture");
 
                     run(helper, player, "legsup");

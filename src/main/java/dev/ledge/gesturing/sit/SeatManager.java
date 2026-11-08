@@ -37,7 +37,7 @@ public final class SeatManager {
                 block.getZ() + offset.z(), directional ? offset.yaw() : yaw, 0f);
         SeatEntity seat = new SeatEntity(location);
         Entity rider = ((CraftPlayer) player).getHandle();
-        if (!rider.startRiding(seat, true, true)) {
+        if (!rider.startRiding(seat, true)) {
             seat.discard();
             return false;
         }
@@ -57,7 +57,7 @@ public final class SeatManager {
         SeatEntity seat = new SeatEntity(target.getLocation().add(0, 0.15, 0));
         Entity targetHandle = ((CraftPlayer) target).getHandle();
         Entity riderHandle = ((CraftPlayer) rider).getHandle();
-        if (!seat.startRiding(targetHandle, true, true) || !riderHandle.startRiding(seat, true, true)) {
+        if (!seat.startRiding(targetHandle, true) || !riderHandle.startRiding(seat, true)) {
             riderHandle.stopRiding(true);
             seat.stopRiding(true);
             seat.discard();

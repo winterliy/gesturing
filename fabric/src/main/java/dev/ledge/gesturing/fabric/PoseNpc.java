@@ -41,7 +41,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.Pose;
-import net.minecraft.world.entity.PositionMoveRotation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Blocks;
@@ -62,10 +61,10 @@ final class PoseNpc {
     private static final EntityDataAccessor<Pose> POSE_ACCESSOR = EntityDataSerializers.POSE.createAccessor(6);
     private static final EntityDataAccessor<Byte> DATA_FLAG_ACCESSOR = EntityDataSerializers.BYTE.createAccessor(8);
     private static final EntityDataAccessor<Optional<BlockPos>> SLEEP_BLOCK_POS_ACCESSOR = EntityDataSerializers.OPTIONAL_BLOCK_POS.createAccessor(14);
-    private static final EntityDataAccessor<HumanoidArm> MAIN_HAND_ACCESSOR = EntityDataSerializers.HUMANOID_ARM.createAccessor(15);
-    private static final EntityDataAccessor<Byte> SKIN_ACCESSOR = EntityDataSerializers.BYTE.createAccessor(16);
-    private static final EntityDataAccessor<OptionalInt> LEFT_SHOULDER_ACCESSOR = EntityDataSerializers.OPTIONAL_UNSIGNED_INT.createAccessor(19);
-    private static final EntityDataAccessor<OptionalInt> RIGHT_SHOULDER_ACCESSOR = EntityDataSerializers.OPTIONAL_UNSIGNED_INT.createAccessor(20);
+    private static final EntityDataAccessor<Byte> MAIN_HAND_ACCESSOR = EntityDataSerializers.BYTE.createAccessor(18);
+    private static final EntityDataAccessor<Byte> SKIN_ACCESSOR = EntityDataSerializers.BYTE.createAccessor(17);
+    private static final EntityDataAccessor<net.minecraft.nbt.CompoundTag> LEFT_SHOULDER_ACCESSOR = EntityDataSerializers.COMPOUND_TAG.createAccessor(19);
+    private static final EntityDataAccessor<net.minecraft.nbt.CompoundTag> RIGHT_SHOULDER_ACCESSOR = EntityDataSerializers.COMPOUND_TAG.createAccessor(20);
     private static Field passengersField;
     private static Field vehicleField;
 
@@ -91,13 +90,13 @@ final class PoseNpc {
 
     PoseNpc(ServerPlayer player, Vec3 seatPos, float seatYaw, Kind kind) {
         this.player = player;
-        this.level = player.level();
+        this.level = (ServerLevel) player.level();
         this.kind = kind;
         this.lying = kind == Kind.LAY || kind == Kind.LEGS_UP;
         this.seatPos = seatPos;
-        bedPos = BlockPos.containing(seatPos.x, level.getMinY(), seatPos.z);
+        bedPos = BlockPos.containing(seatPos.x, level.getMinBuildHeight(), seatPos.z);
 
-        GameProfile profile = new GameProfile(UUID.randomUUID(), player.getGameProfile().name(), player.getGameProfile().properties());
+        GameProfile profile = copyProfile(player.getGameProfile());
         npc = new ServerPlayer(level.getServer(), level, profile, player.clientInformation());
         npc.connection = player.connection;
         double height = seatPos.y - BASE_OFFSET;
@@ -105,7 +104,7 @@ final class PoseNpc {
         double offset = height;
         if (lying) offset += 0.1125d * scale;
         if (kind == Kind.BELLYFLOP) offset += -0.19d * scale;
-        npc.absSnapTo(seatPos.x, offset, seatPos.z, 0f, 0f);
+        npc.moveTo(seatPos.x, offset, seatPos.z, 0f, 0f);
 
         direction = directionOf(seatYaw);
         if (lying) bedPacket = new ClientboundBlockUpdatePacket(bedPos, Blocks.WHITE_BED.defaultBlockState()
@@ -116,11 +115,11 @@ final class PoseNpc {
                 ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME), Collections.singletonList(npc));
         removeInfoPacket = new ClientboundPlayerInfoRemovePacket(Collections.singletonList(npc.getUUID()));
         removePacket = new ClientboundRemoveEntitiesPacket(npc.getId());
-        if (lying) teleportPacket = new ClientboundTeleportEntityPacket(npc.getId(), PositionMoveRotation.of(npc), Set.of(), false);
+        if (lying) teleportPacket = new ClientboundTeleportEntityPacket(npc);
         if (kind == Kind.LEGS_UP) {
             vehicleEntity = helper(player.position());
             float sleepYaw = direction == Direction.SOUTH ? 270 : direction == Direction.WEST ? 180 : direction == Direction.EAST ? 0 : 90;
-            vehicleEntity.absSnapTo(seatPos.x, height - 0.375d * scale, seatPos.z, sleepYaw, 0f);
+            vehicleEntity.moveTo(seatPos.x, height - 0.375d * scale, seatPos.z, sleepYaw, 0f);
         } else vehicleEntity = null;
         hideNameEntity = helper(player.position());
     }
@@ -145,8 +144,8 @@ final class PoseNpc {
         npc.getEntityData().set(SKIN_ACCESSOR, player.getEntityData().get(SKIN_ACCESSOR));
         npc.getEntityData().set(LEFT_SHOULDER_ACCESSOR, player.getEntityData().get(LEFT_SHOULDER_ACCESSOR));
         npc.getEntityData().set(RIGHT_SHOULDER_ACCESSOR, player.getEntityData().get(RIGHT_SHOULDER_ACCESSOR));
-        player.getEntityData().set(LEFT_SHOULDER_ACCESSOR, OptionalInt.empty());
-        player.getEntityData().set(RIGHT_SHOULDER_ACCESSOR, OptionalInt.empty());
+        player.getEntityData().set(LEFT_SHOULDER_ACCESSOR, new net.minecraft.nbt.CompoundTag());
+        player.getEntityData().set(RIGHT_SHOULDER_ACCESSOR, new net.minecraft.nbt.CompoundTag());
         player.setInvisible(true);
 
         List<Packet<? super ClientGamePacketListener>> packets = new ArrayList<>();
@@ -293,5 +292,11 @@ final class PoseNpc {
         yaw = net.minecraft.util.Mth.wrapDegrees(yaw);
         return (yaw >= 135f || yaw < -135f) ? Direction.NORTH : (yaw >= -135f && yaw < -45f) ? Direction.EAST
                 : (yaw >= -45f && yaw < 45f) ? Direction.SOUTH : Direction.WEST;
+    }
+
+    private static GameProfile copyProfile(GameProfile source) {
+        GameProfile profile = new GameProfile(UUID.randomUUID(), source.getName());
+        profile.getProperties().putAll(source.getProperties());
+        return profile;
     }
 }

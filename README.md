@@ -1,6 +1,6 @@
 # Gesturing
 
-Gesturing is a standalone Minecraft 1.21.11 plugin for Paper and GLAP1, with a separate
+Gesturing is a standalone Minecraft 1.20.6 plugin for Paper and GLAP1, with a separate
 Fabric server mod. It does not depend on GSit at runtime. Shape-aware seats
 and the invisible NMS seat entity are adapted from GSit 3.8.0 under
 GPL-3.0-only; attribution and license are in
@@ -8,7 +8,7 @@ GPL-3.0-only; attribution and license are in
 
 ## Requirements
 
-- Paper 26.2 (build 135 tested) or GLAP1 for Minecraft 1.21.11
+- Paper 26.2 (build 135 tested) or GLAP1 for Minecraft 1.20.6
 - Java 21 or newer
 
 ## Commands
@@ -39,7 +39,7 @@ restart the server. `/sit` is command-only; right-clicking blocks does not sit.
 
 ### Fabric server mod
 
-The Fabric build targets Minecraft 1.21.11 and Java 25. Build it with:
+The Fabric build targets Minecraft 1.20.6 and Java 25. Build it with:
 
 ```sh
 ./gradlew -p fabric build
@@ -47,7 +47,7 @@ The Fabric build targets Minecraft 1.21.11 and Java 25. Build it with:
 
 Copy `fabric/build/libs/gesturing-fabric-0.3.2.jar` into the Fabric server's
 `mods` folder. The server must have Fabric Loader 0.20.1 or newer and Fabric
-API 0.141.0+1.21.11 or newer. The Fabric build supports `/sit`, `/lay`,
+API 0.100.0+1.20.6 or newer. The Fabric build supports `/sit`, `/lay`,
 `/bellyflop`, `/legsup`, `/spin`, `/crawl`, and `/stand`. Player-seat toggling
 is currently Paper-only. Fabric GameTests exercise full blocks, slabs, stairs,
 directional blocks, sit toggling, four `/lay` directions, every pose, invalid
@@ -55,6 +55,15 @@ inputs, and cleanup after movement, teleport, sneaking, damage notification,
 and disconnect.
 
 ## Verification
+
+### Branch `1.20.6` (2026-11-09)
+
+- Paper 1.20.6 build 151 (dev bundle `1.20.6-R0.1-SNAPSHOT`, Java 21): plugin enables on a fresh isolated server.
+- Fabric 1.20.6 (Fabric API 0.100.8): `All 2 required tests passed`.
+- API differences from 1.21.11: `moveTo` instead of `absSnapTo`, `startRiding(entity, force)`, `hurt(source, amount)`, `GameProfile.getName()/getProperties()`,
+  player entity-data ids shifted (skin 17, main hand 18 as a byte, shoulders are `CompoundTag`), teleport packet built from the entity,
+  no `setRiptiding`, GameTests use `@GameTest(template = EMPTY_STRUCTURE)` and `ServerLivingEntityEvents.ALLOW_DAMAGE`.
+- Not yet checked with a real 1.20.6 client.
 
 ### Branch `1.21.11` (2026-11-09)
 
@@ -73,7 +82,7 @@ and disconnect.
 ### Branch `26.2` (2026-11-09)
 
 - Paper 26.2 build 135: plugin builds and enables on a fresh isolated server.
-- Fabric 26.2 (Fabric API 0.141.0+1.21.11): `All 3 required tests passed`.
+- Fabric 26.2 (Fabric API 0.100.0+1.20.6): `All 3 required tests passed`.
 - API differences from 26.3: `ClientboundMoveEntityPacket.PosRot` takes three `short` deltas instead of `VecDelta`, and
   `setPermanentlyInvulnerable` is `setInvulnerable`.
 - Not yet checked with a real 26.2 client. The 26.3 in-game results below were taken on branch `26.3`.

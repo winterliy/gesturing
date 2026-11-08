@@ -38,7 +38,6 @@ public final class PoseHelperEntity extends AreaEffectCloud {
     }
 
     @Override public void tick() { }
-    @Override protected void handlePortal() { }
     @Override public boolean dismountsUnderwater() { return false; }
 
     /** Links {@code passenger} to this entity without the server-side riding logic (packet-only use). */

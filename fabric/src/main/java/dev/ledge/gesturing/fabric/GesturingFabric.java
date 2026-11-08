@@ -35,11 +35,12 @@ public final class GesturingFabric implements ModInitializer {
     public void onInitialize() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> registerCommands(dispatcher));
         ServerTickEvents.END_SERVER_TICK.register(this::tick);
-        ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, baseDamage, damageTaken, blocked) -> {
+        ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {
             if (entity instanceof ServerPlayer player) stop(player, false);
+            return true;
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> stop(handler.player, false));
-        System.out.println("[Gesturing] Fabric 0.3.2 initialized for Minecraft 1.21.11.");
+        System.out.println("[Gesturing] Fabric 0.3.2 initialized for Minecraft 1.20.6.");
     }
 
     private void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -75,7 +76,7 @@ public final class GesturingFabric implements ModInitializer {
     /** Mounts the player on an invisible seat on the supporting block; yawOverride is used for non-directional blocks. */
     private GestureState seat(ServerPlayer player, Float yawOverride, Pose pose) {
         BlockPos support = player.blockPosition().below();
-        ServerLevel level = player.level();
+        ServerLevel level = (ServerLevel) player.level();
         BlockState state = level.getBlockState(support);
         if (state.isAir() || !state.getFluidState().isEmpty()) {
             player.sendSystemMessage(Component.literal("앉을 수 있는 블록을 찾지 못했습니다."));
@@ -90,7 +91,7 @@ public final class GesturingFabric implements ModInitializer {
         ArmorStand seat = new SeatEntity(level, x, y, z);
         configureSeat(seat, yaw);
         Entity rider = player;
-        if (!rider.startRiding(seat, true, true) || !level.addFreshEntity(seat)) {
+        if (!rider.startRiding(seat, true) || !level.addFreshEntity(seat)) {
             rider.stopRiding();
             seat.discard();
             player.sendSystemMessage(Component.literal("좌석을 만들지 못했습니다."));

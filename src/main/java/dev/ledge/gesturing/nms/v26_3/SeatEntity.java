@@ -49,8 +49,7 @@ public final class SeatEntity extends ArmorStand {
     }
 
     @Override public void move(@NotNull MoverType type, @NotNull Vec3 movement) { }
-    @Override public boolean hurtServer(@NotNull ServerLevel level, @NotNull DamageSource source, float amount) { return false; }
-    @Override protected void handlePortal() { }
+    @Override public boolean hurt(@NotNull DamageSource source, float amount) { return false; }
     @Override public boolean isAffectedByFluids() { return false; }
     @Override public boolean dismountsUnderwater() { return false; }
 }
