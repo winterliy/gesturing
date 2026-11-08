@@ -161,6 +161,7 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
         Location ceiling = ceilings.remove(id);
         if (ceiling != null && player.isOnline()) player.sendBlockChange(ceiling, ceiling.getBlock().getBlockData());
         if (player.isRiptiding()) player.setRiptiding(false);
+        if (player.isOnline() && !player.isDead()) player.unsetFixedPose();
     }
 
     private void remember(Player player) { originalPoses.putIfAbsent(player.getUniqueId(), player.getPose()); }
