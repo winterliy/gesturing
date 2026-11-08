@@ -2,6 +2,10 @@ package dev.ledge.gesturing;
 
 import dev.ledge.gesturing.sit.SeatManager;
 import dev.ledge.gesturing.gesture.GestureDirection;
+import dev.ledge.gesturing.gesture.PoseKind;
+import dev.ledge.gesturing.nms.v26_3.PoseNpc;
+import org.bukkit.Material;
+import org.bukkit.block.BlockFace;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
@@ -35,6 +39,9 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
     private final Map<UUID, Gesture> active = new HashMap<>();
     private final Set<UUID> playerSitOptOut = new HashSet<>();
     private final SeatManager seats = new SeatManager();
+    private final Map<UUID, PoseNpc> poseNpcs = new HashMap<>();
+    private final Map<UUID, Location> anchors = new HashMap<>();
+    private final Map<UUID, Location> ceilings = new HashMap<>();
 
     @Override public void onEnable() {
         getServer().getPluginManager().registerEvents(this, this);
@@ -71,7 +78,7 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
                 } else if (args.length == 0) startSit(player);
                 else player.sendMessage(ChatColor.YELLOW + "사용법: /sit [toggle|playertoggle]");
             }
-            case "lay" -> startPose(player, Pose.SLEEPING, args, "사용법: /lay <east|west|south|north>", Gesture.LAY);
+            case "lay" -> startPose(player, Pose.SLEEPING, args, "사용법: /lay [east|west|south|north]", Gesture.LAY);
             case "bellyflop" -> startPose(player, Pose.SWIMMING, new String[0], null, Gesture.BELLYFLOP);
             case "legsup" -> startPose(player, Pose.SLEEPING, new String[0], null, Gesture.LEGS_UP);
             case "spin" -> startPose(player, Pose.SPIN_ATTACK, new String[0], null, Gesture.SPIN);
@@ -98,20 +105,63 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
     }
 
     private void startPose(Player player, Pose pose, String[] args, @Nullable String usage, Gesture gesture) {
-        if (usage != null) {
-            if (args.length != 1 || GestureDirection.parse(args[0]).isEmpty()) {
-                player.sendMessage(ChatColor.YELLOW + usage);
-                return;
-            }
+        boolean explicitDirection = usage != null && args.length > 0;
+        if (explicitDirection && (args.length != 1 || GestureDirection.parse(args[0]).isEmpty())) {
+            player.sendMessage(ChatColor.YELLOW + usage);
+            return;
         }
         stop(player, false);
         remember(player);
-        if (usage != null) {
+        if (explicitDirection) {
             player.setRotation(GestureDirection.parse(args[0]).orElseThrow().yaw(), player.getLocation().getPitch());
         }
-        player.setPose(pose, true);
+        PoseKind npcKind = switch (gesture) {
+            case LAY -> PoseKind.LAY; case LEGS_UP -> PoseKind.LEGS_UP;
+            case BELLYFLOP -> PoseKind.BELLYFLOP; case SPIN -> PoseKind.SPIN; default -> null;
+        };
+        if (npcKind != null) {
+            float yaw = explicitDirection ? GestureDirection.parse(args[0]).orElseThrow().yaw() : player.getLocation().getYaw();
+            if (!seats.sitOnSupportingBlock(player, yaw)) {
+                originalPoses.remove(player.getUniqueId());
+                player.sendMessage(ChatColor.RED + "자세를 취할 블록을 찾지 못했습니다.");
+                return;
+            }
+            PoseNpc npc = new PoseNpc(this, player, seats.seatOf(player), seats.seatLocationOf(player), npcKind);
+            npc.spawn();
+            poseNpcs.put(player.getUniqueId(), npc);
+            active.put(player.getUniqueId(), gesture);
+            player.sendMessage(ChatColor.GREEN + "동작을 시작했습니다. 이동하거나 웅크리면 종료됩니다.");
+            return;
+        }
+        switch (gesture) {
+            case CRAWL -> {
+                Location ceiling = player.getLocation().getBlock().getRelative(BlockFace.UP).getLocation();
+                if (ceiling.getBlock().isEmpty()) {
+                    player.sendBlockChange(ceiling, Material.BARRIER.createBlockData());
+                    ceilings.put(player.getUniqueId(), ceiling);
+                }
+                player.setPose(pose, true);
+            }
+            case SPIN -> {
+                player.setPose(pose, true);
+                player.setRiptiding(true);
+            }
+            default -> player.setPose(pose, true);
+        }
+        anchors.put(player.getUniqueId(), player.getLocation());
         active.put(player.getUniqueId(), gesture);
         player.sendMessage(ChatColor.GREEN + "동작을 시작했습니다. 이동하거나 웅크리면 종료됩니다.");
+    }
+
+    private void cleanupPose(Player player) {
+        UUID id = player.getUniqueId();
+        anchors.remove(id);
+        PoseNpc npc = poseNpcs.remove(id);
+        if (npc != null) npc.remove();
+        Location ceiling = ceilings.remove(id);
+        if (ceiling != null && player.isOnline()) player.sendBlockChange(ceiling, ceiling.getBlock().getBlockData());
+        if (player.isRiptiding()) player.setRiptiding(false);
+        if (player.isOnline() && !player.isDead()) player.unsetFixedPose();
     }
 
     private void remember(Player player) { originalPoses.putIfAbsent(player.getUniqueId(), player.getPose()); }
@@ -120,6 +170,7 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
         UUID id = player.getUniqueId();
         boolean wasActive = active.remove(id) != null;
         seats.stop(player);
+        cleanupPose(player);
         Pose old = originalPoses.remove(id);
         if (old != null && player.isOnline() && !player.isDead()) player.setPose(old, false);
         if (message) player.sendMessage(wasActive ? ChatColor.GREEN + "동작을 종료했습니다." : ChatColor.YELLOW + "현재 동작 중이 아닙니다.");
@@ -140,7 +191,12 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onMove(PlayerMoveEvent event) {
-        if (event.getTo() != null && moved(event.getFrom(), event.getTo())) stop(event.getPlayer(), false);
+        if (event.getTo() == null) return;
+        Location anchor = anchors.get(event.getPlayer().getUniqueId());
+        if (anchor != null) {
+            Location to = event.getTo();
+            if (to.getWorld() != anchor.getWorld() || to.distanceSquared(anchor) > 0.64) stop(event.getPlayer(), false);
+        } else if (moved(event.getFrom(), event.getTo())) stop(event.getPlayer(), false);
     }
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent event) { stop(event.getPlayer(), false); }

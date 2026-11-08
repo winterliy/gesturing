@@ -18,15 +18,23 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 public final class SeatManager {
     private final Map<UUID, SeatEntity> seats = new HashMap<>();
     private final Map<UUID, UUID> playerSeatTargets = new HashMap<>();
+    private final Map<UUID, Location> seatLocations = new HashMap<>();
+    private final Map<UUID, Location> returnLocations = new HashMap<>();
 
-    public boolean sitOnSupportingBlock(Player player) {
+    public SeatEntity seatOf(Player player) { return seats.get(player.getUniqueId()); }
+    public Location seatLocationOf(Player player) { return seatLocations.get(player.getUniqueId()); }
+
+    public boolean sitOnSupportingBlock(Player player) { return sitOnSupportingBlock(player, player.getLocation().getYaw()); }
+
+    public boolean sitOnSupportingBlock(Player player, float yaw) {
         stop(player);
+        Location returnLocation = player.getLocation().clone();
         Block block = player.getLocation().getBlock().getRelative(BlockFace.DOWN);
         if (block.isEmpty() || block.isLiquid()) return false;
         SeatGeometry.Offset offset = SeatGeometry.offsetFor(block.getBlockData());
         boolean directional = block.getBlockData() instanceof Stairs || block.getBlockData() instanceof Directional;
         Location location = new Location(block.getWorld(), block.getX() + offset.x(), block.getY() + offset.y() - 0.025,
-                block.getZ() + offset.z(), directional ? offset.yaw() : player.getLocation().getYaw(), 0f);
+                block.getZ() + offset.z(), directional ? offset.yaw() : yaw, 0f);
         SeatEntity seat = new SeatEntity(location);
         Entity rider = ((CraftPlayer) player).getHandle();
         if (!rider.startRiding(seat, true, true)) {
@@ -39,6 +47,8 @@ public final class SeatManager {
             return false;
         }
         seats.put(player.getUniqueId(), seat);
+        seatLocations.put(player.getUniqueId(), location);
+        returnLocations.put(player.getUniqueId(), returnLocation);
         return true;
     }
 
@@ -67,10 +77,18 @@ public final class SeatManager {
     public void stop(Player player) {
         SeatEntity seat = seats.remove(player.getUniqueId());
         playerSeatTargets.remove(player.getUniqueId());
+        seatLocations.remove(player.getUniqueId());
         if (seat == null) return;
+        Location back = returnLocations.remove(player.getUniqueId());
         Entity handle = ((CraftPlayer) player).getHandle();
         if (handle.isPassenger()) handle.stopRiding(true);
         if (seat.isAlive()) seat.discard();
+        if (back != null && player.isOnline() && !player.isDead() && back.getWorld() == player.getWorld()) {
+            Location current = player.getLocation();
+            back.setYaw(current.getYaw());
+            back.setPitch(current.getPitch());
+            player.teleport(back);
+        }
     }
 
     public boolean isSitting(Player player) {

@@ -17,6 +17,10 @@ import org.jetbrains.annotations.NotNull;
  * Gesturing changes: isolated as a minimal command-driven seat entity.
  */
 public final class SeatEntity extends ArmorStand {
+    private Runnable runnable;
+
+    public void setRunnable(Runnable runnable) { this.runnable = runnable; }
+
     public SeatEntity(Location location) {
         super(((CraftWorld) location.getWorld()).getHandle(), location.getX(), location.getY(), location.getZ());
         persist = false;
@@ -36,6 +40,7 @@ public final class SeatEntity extends ArmorStand {
     @Override public void tick() {
         super.tick();
         if (!isAlive() || !valid) return;
+        if (runnable != null) runnable.run();
         Entity rider = getFirstPassenger();
         if (rider != null) {
             setYRot(rider.getYRot());
