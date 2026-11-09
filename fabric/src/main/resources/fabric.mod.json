@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "gesturing",
+  "version": "${version}",
+  "name": "Gesturing",
+  "description": "Server-side gestures and block seating for Minecraft 1.12.2 (Legacy Fabric).",
+  "authors": ["winterliy"],
+  "contact": { "sources": "https://github.com/winterliy/gesturing" },
+  "license": "GPL-3.0-only",
+  "environment": "*",
+  "entrypoints": { "main": ["dev.ledge.gesturing.fabric.GesturingFabric"] },
+  "depends": { "fabricloader": ">=0.15.0", "minecraft": "1.12.2" }
+}
