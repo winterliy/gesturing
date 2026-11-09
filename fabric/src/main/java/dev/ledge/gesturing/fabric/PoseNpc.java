@@ -92,10 +92,10 @@ final class PoseNpc {
         this.kind = kind;
         this.lying = kind == Kind.LAY || kind == Kind.LEGS_UP;
         this.seatPos = seatPos;
-        bedPos = new BlockPos(seatPos.x, level.dimensionType().minY(), seatPos.z);
+        bedPos = new BlockPos(seatPos.x, 0, seatPos.z);
 
         GameProfile profile = copyProfile(player.getGameProfile());
-        npc = new ServerPlayer(level.getServer(), level, profile);
+        npc = new ServerPlayer(level.getServer(), level, profile, new net.minecraft.server.level.ServerPlayerGameMode(level));
         npc.connection = player.connection;
         double height = seatPos.y - BASE_OFFSET;
         double scale = player.getScale();
@@ -182,7 +182,7 @@ final class PoseNpc {
     }
 
     void remove() {
-        for (ServerPlayer viewer : List.copyOf(viewers.keySet())) removeViewer(viewer);
+        for (ServerPlayer viewer : new java.util.ArrayList<>(viewers.keySet())) removeViewer(viewer);
         viewers.clear();
         if (vehicleEntity != null) player.connection.send(new ClientboundRemoveEntitiesPacket(vehicleEntity.getId()));
         player.connection.send(new ClientboundRemoveEntitiesPacket(hideNameEntity.getId()));
@@ -203,7 +203,7 @@ final class PoseNpc {
                 for (Packet<ClientGamePacketListener> packet : bundle) other.connection.send(packet);
             }
         }
-        for (ServerPlayer other : List.copyOf(viewers.keySet())) {
+        for (ServerPlayer other : new java.util.ArrayList<>(viewers.keySet())) {
             if (!current.contains(other)) { removeViewer(other); viewers.remove(other); }
         }
     }
@@ -216,7 +216,7 @@ final class PoseNpc {
 
     private void updateDirection() {
         if (kind == Kind.BELLYFLOP) {
-            byte fixed = fixedRotation(player.getYRot());
+            byte fixed = fixedRotation(player.yRot);
             if (directionCache == fixed) return;
             directionCache = fixed;
             ClientboundRotateHeadPacket head = new ClientboundRotateHeadPacket(npc, fixed);
@@ -224,7 +224,7 @@ final class PoseNpc {
             for (ServerPlayer viewer : viewers.keySet()) { viewer.connection.send(head); viewer.connection.send(move); }
             return;
         }
-        float playerYaw = player.getYRot();
+        float playerYaw = player.yRot;
         if (directionCache == playerYaw) return;
         directionCache = playerYaw;
         if (direction == Direction.WEST) playerYaw -= 90;
@@ -259,7 +259,7 @@ final class PoseNpc {
 
     private static ClientboundAddEntityPacket addEntity(Entity entity) {
         return new ClientboundAddEntityPacket(entity.getId(), entity.getUUID(), entity.getX(), entity.getY(), entity.getZ(),
-                entity.getXRot(), entity.getYRot(), entity.getType(), 0, entity.getDeltaMovement());
+                entity.xRot, entity.yRot, entity.getType(), 0, entity.getDeltaMovement());
     }
 
     private static void attach(Entity passenger, Entity vehicle) {

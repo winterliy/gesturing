@@ -35,7 +35,7 @@ public final class GesturingFabric implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> registerCommands(dispatcher));
         ServerTickEvents.END_SERVER_TICK.register(this::tick);
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> stop(handler.player, false));
-        System.out.println("[Gesturing] Fabric 0.3.2 initialized for Minecraft 1.17.1.");
+        System.out.println("[Gesturing] Fabric 0.3.2 initialized for Minecraft 1.16.5.");
     }
 
     private void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -78,7 +78,7 @@ public final class GesturingFabric implements ModInitializer {
             return null;
         }
         Offset offset = SeatGeometry.offsetFor(state);
-        float yaw = SeatGeometry.hasHorizontalFacing(state) ? offset.yaw() : yawOverride != null ? yawOverride : player.getYRot();
+        float yaw = SeatGeometry.hasHorizontalFacing(state) ? offset.yaw() : yawOverride != null ? yawOverride : player.yRot;
         double x = support.getX() + offset.x();
         double y = support.getY() + offset.y() - 0.025d;
         double z = support.getZ() + offset.z();
@@ -88,7 +88,7 @@ public final class GesturingFabric implements ModInitializer {
         Entity rider = player;
         if (!rider.startRiding(seat, true) || !level.addFreshEntity(seat)) {
             rider.stopRiding();
-            seat.discard();
+            seat.remove();
             player.sendMessage(new net.minecraft.network.chat.TextComponent("좌석을 만들지 못했습니다."), net.minecraft.Util.NIL_UUID);
             return null;
         }
@@ -114,7 +114,7 @@ public final class GesturingFabric implements ModInitializer {
             default -> null;
         };
         if (yaw == null) return message(source, "방향은 east, west, south, north 중 하나여야 합니다.");
-        player.setYRot(yaw);
+        player.yRot = yaw;
         player.setYHeadRot(yaw);
         return npcPose(player, PoseNpc.Kind.LAY, yaw, direction + " 방향으로 누웠습니다.");
     }
@@ -169,22 +169,22 @@ public final class GesturingFabric implements ModInitializer {
         if (state.npc() != null) state.npc().remove();
         if (state.seat() != null) {
             player.stopRiding();
-            if (state.seat().isAlive()) state.seat().discard();
-            if (!player.isRemoved() && player.isAlive()) {
+            if (state.seat().isAlive()) state.seat().remove();
+            if (!player.removed && player.isAlive()) {
                 Vec3 back = state.startedAt();
-                player.connection.teleport(back.x, back.y, back.z, player.getYRot(), player.getXRot());
+                player.connection.teleport(back.x, back.y, back.z, player.yRot, player.xRot);
             }
         }
-        if (state.ceiling() != null && !player.isRemoved()) {
+        if (state.ceiling() != null && !player.removed) {
             player.connection.send(new ClientboundBlockUpdatePacket(player.level, state.ceiling()));
         }
-        if (!player.isRemoved() && state.seat() == null) player.setPose(state.originalPose());
+        if (!player.removed && state.seat() == null) player.setPose(state.originalPose());
         if (notify) player.sendMessage(new net.minecraft.network.chat.TextComponent("동작을 종료했습니다."), net.minecraft.Util.NIL_UUID);
         return true;
     }
 
     private void tick(MinecraftServer server) {
-        for (Map.Entry<UUID, GestureState> entry : Map.copyOf(active).entrySet()) {
+        for (Map.Entry<UUID, GestureState> entry : new java.util.HashMap<>(active).entrySet()) {
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
             if (player == null) continue;
             GestureState state = entry.getValue();
@@ -197,8 +197,8 @@ public final class GesturingFabric implements ModInitializer {
             }
             if (state.npc() != null) state.npc().tick();
             if (state.seat() != null) {
-                state.seat().setYRot(player.getYRot());
-                state.seat().setYBodyRot(player.getYRot());
+                state.seat().yRot = player.yRot;
+                state.seat().setYBodyRot(player.yRot);
             }
         }
     }
@@ -207,13 +207,26 @@ public final class GesturingFabric implements ModInitializer {
         seat.setInvisible(true);
         seat.setNoGravity(true);
         seat.getEntityData().set(ArmorStand.DATA_CLIENT_FLAGS,
-                (byte) (ArmorStand.CLIENT_FLAG_MARKER | ArmorStand.CLIENT_FLAG_SMALL | ArmorStand.CLIENT_FLAG_NO_BASEPLATE));
-        seat.setYRot(yaw);
+                (byte) (16 | 1 | 8));
+        seat.yRot = yaw;
         seat.setYBodyRot(yaw);
     }
 
-    private record GestureState(Pose originalPose, Pose pose, ArmorStand seat, Vec3 startedAt,
-                                PoseNpc npc, BlockPos ceiling, Vec3 seatPos, float seatYaw) {
+    private static final class GestureState {
+        private final Pose originalPose; private final Pose pose; private final ArmorStand seat; private final Vec3 startedAt;
+        private final PoseNpc npc; private final BlockPos ceiling; private final Vec3 seatPos; private final float seatYaw;
+        GestureState(Pose originalPose, Pose pose, ArmorStand seat, Vec3 startedAt, PoseNpc npc, BlockPos ceiling, Vec3 seatPos, float seatYaw) {
+            this.originalPose = originalPose; this.pose = pose; this.seat = seat; this.startedAt = startedAt;
+            this.npc = npc; this.ceiling = ceiling; this.seatPos = seatPos; this.seatYaw = seatYaw;
+        }
+        Pose originalPose() { return originalPose; }
+        Pose pose() { return pose; }
+        ArmorStand seat() { return seat; }
+        Vec3 startedAt() { return startedAt; }
+        PoseNpc npc() { return npc; }
+        BlockPos ceiling() { return ceiling; }
+        Vec3 seatPos() { return seatPos; }
+        float seatYaw() { return seatYaw; }
         GestureState withNpc(PoseNpc npc) {
             return new GestureState(originalPose, pose, seat, startedAt, npc, ceiling, seatPos, seatYaw);
         }

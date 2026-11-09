@@ -3,7 +3,7 @@ package dev.ledge.gesturing;
 import dev.ledge.gesturing.sit.SeatManager;
 import dev.ledge.gesturing.gesture.GestureDirection;
 import dev.ledge.gesturing.gesture.PoseKind;
-import dev.ledge.gesturing.nms.v26_3.PoseNpc;
+import dev.ledge.gesturing.nms.v1_16_R3.PoseNpc;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 import java.util.HashMap;
@@ -106,21 +106,21 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
 
     private void startPose(Player player, Pose pose, String[] args, @Nullable String usage, Gesture gesture) {
         boolean explicitDirection = usage != null && args.length > 0;
-        if (explicitDirection && (args.length != 1 || GestureDirection.parse(args[0]).isEmpty())) {
+        if (explicitDirection && (args.length != 1 || !GestureDirection.parse(args[0]).isPresent())) {
             player.sendMessage(ChatColor.YELLOW + usage);
             return;
         }
         stop(player, false);
         remember(player);
         if (explicitDirection) {
-            player.setRotation(GestureDirection.parse(args[0]).orElseThrow().yaw(), player.getLocation().getPitch());
+            player.setRotation(GestureDirection.parse(args[0]).get().yaw(), player.getLocation().getPitch());
         }
         PoseKind npcKind = switch (gesture) {
             case LAY -> PoseKind.LAY; case LEGS_UP -> PoseKind.LEGS_UP;
             case BELLYFLOP -> PoseKind.BELLYFLOP; case SPIN -> PoseKind.SPIN; default -> null;
         };
         if (npcKind != null) {
-            float yaw = explicitDirection ? GestureDirection.parse(args[0]).orElseThrow().yaw() : player.getLocation().getYaw();
+            float yaw = explicitDirection ? GestureDirection.parse(args[0]).get().yaw() : player.getLocation().getYaw();
             if (!seats.sitOnSupportingBlock(player, yaw)) {
                 originalPoses.remove(player.getUniqueId());
                 player.sendMessage(ChatColor.RED + "자세를 취할 블록을 찾지 못했습니다.");
@@ -208,10 +208,10 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
 
     @Override public @Nullable java.util.List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                                                      @NotNull String alias, @NotNull String[] args) {
-        if (!command.getName().equalsIgnoreCase("lay") || args.length != 1) return java.util.List.of();
+        if (!command.getName().equalsIgnoreCase("lay") || args.length != 1) return java.util.Collections.emptyList();
         String prefix = args[0].toLowerCase(Locale.ROOT);
         return java.util.Arrays.stream(GestureDirection.values()).map(direction -> direction.name().toLowerCase(Locale.ROOT))
-                .filter(direction -> direction.startsWith(prefix)).sorted().toList();
+                .filter(direction -> direction.startsWith(prefix)).sorted().collect(java.util.stream.Collectors.toList());
     }
 
     private boolean moved(Location from, Location to) {
@@ -222,7 +222,7 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
 
     /** Bukkit 1.19.4 has no Entity#setPose, so set the NMS pose directly. */
     private static void setPose(Player player, Pose pose) {
-        ((org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer) player).getHandle()
-                .setPose(net.minecraft.world.entity.Pose.valueOf(pose.name()));
+        ((org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer) player).getHandle()
+                .setPose(net.minecraft.server.v1_16_R3.EntityPose.valueOf(pose.name()));
     }
 }

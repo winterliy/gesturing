@@ -84,6 +84,22 @@ public final class SeatGeometry {
     }
 
     public enum Kind { FULL, BOTTOM_SLAB, STAIRS, DIRECTIONAL }
-    public record Shape(Kind kind, boolean bottomHalf, BlockFace facing, Stairs.Shape stairShape) { }
-    public record Offset(double x, double y, double z, float yaw) { }
+    public static final class Shape {
+        private final Kind kind; private final boolean bottomHalf; private final BlockFace facing; private final Stairs.Shape stairShape;
+        public Shape(Kind kind, boolean bottomHalf, BlockFace facing, Stairs.Shape stairShape) {
+            this.kind = kind; this.bottomHalf = bottomHalf; this.facing = facing; this.stairShape = stairShape;
+        }
+        public Kind kind() { return kind; }
+        public boolean bottomHalf() { return bottomHalf; }
+        public BlockFace facing() { return facing; }
+        public Stairs.Shape stairShape() { return stairShape; }
+    }
+    public static final class Offset {
+        private final double x, y, z; private final float yaw;
+        public Offset(double x, double y, double z, float yaw) { this.x = x; this.y = y; this.z = z; this.yaw = yaw; }
+        public double x() { return x; }
+        public double y() { return y; }
+        public double z() { return z; }
+        public float yaw() { return yaw; }
+    }
 }

@@ -12,6 +12,8 @@ base {
 repositories { }
 
 dependencies {
+    annotationProcessor 'com.pkware.jabel:jabel-javac-plugin:1.0.1-2'
+    compileOnly 'com.pkware.jabel:jabel-javac-plugin:1.0.1-2'
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.officialMojangMappings()
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
@@ -30,7 +32,8 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
-    options.release = 17
+    sourceCompatibility = '17'
+    options.release = 8
     options.encoding = 'UTF-8'
 }
 

@@ -1,17 +1,14 @@
 package dev.ledge.gesturing.sit;
 
-import dev.ledge.gesturing.nms.v26_3.SeatEntity;
+import dev.ledge.gesturing.nms.v1_16_R3.SeatEntity;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import net.minecraft.world.entity.Entity;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.type.Stairs;
-import org.bukkit.craftbukkit.v1_17_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 
@@ -36,14 +33,13 @@ public final class SeatManager {
         Location location = new Location(block.getWorld(), block.getX() + offset.x(), block.getY() + offset.y() - 0.025,
                 block.getZ() + offset.z(), directional ? offset.yaw() : yaw, 0f);
         SeatEntity seat = new SeatEntity(location);
-        Entity rider = ((CraftPlayer) player).getHandle();
-        if (!rider.startRiding(seat, true)) {
-            seat.discard();
+        if (!seat.mount(player)) {
+            seat.remove();
             return false;
         }
-        if (!((CraftWorld) block.getWorld()).getHandle().addFreshEntity(seat)) {
-            rider.stopRiding(true);
-            seat.discard();
+        if (!seat.spawn(block.getWorld())) {
+            SeatEntity.dismount(player);
+            seat.remove();
             return false;
         }
         seats.put(player.getUniqueId(), seat);
@@ -55,18 +51,16 @@ public final class SeatManager {
     public boolean sitOnPlayer(Player rider, Player target) {
         stop(rider);
         SeatEntity seat = new SeatEntity(target.getLocation().add(0, 0.15, 0));
-        Entity targetHandle = ((CraftPlayer) target).getHandle();
-        Entity riderHandle = ((CraftPlayer) rider).getHandle();
-        if (!seat.startRiding(targetHandle, true) || !riderHandle.startRiding(seat, true)) {
-            riderHandle.stopRiding(true);
-            seat.stopRiding(true);
-            seat.discard();
+        if (!seat.mountOn(target) || !seat.mount(rider)) {
+            SeatEntity.dismount(rider);
+            seat.dismountSelf();
+            seat.remove();
             return false;
         }
-        if (!((CraftWorld) target.getWorld()).getHandle().addFreshEntity(seat)) {
-            riderHandle.stopRiding(true);
-            seat.stopRiding(true);
-            seat.discard();
+        if (!seat.spawn(target.getWorld())) {
+            SeatEntity.dismount(rider);
+            seat.dismountSelf();
+            seat.remove();
             return false;
         }
         seats.put(rider.getUniqueId(), seat);
@@ -80,9 +74,8 @@ public final class SeatManager {
         seatLocations.remove(player.getUniqueId());
         if (seat == null) return;
         Location back = returnLocations.remove(player.getUniqueId());
-        Entity handle = ((CraftPlayer) player).getHandle();
-        if (handle.isPassenger()) handle.stopRiding(true);
-        if (seat.isAlive()) seat.discard();
+        SeatEntity.dismount(player);
+        if (seat.alive()) seat.remove();
         if (back != null && player.isOnline() && !player.isDead() && back.getWorld() == player.getWorld()) {
             Location current = player.getLocation();
             back.setYaw(current.getYaw());
@@ -93,25 +86,25 @@ public final class SeatManager {
 
     public boolean isSitting(Player player) {
         SeatEntity seat = seats.get(player.getUniqueId());
-        return seat != null && seat.isAlive();
+        return seat != null && seat.alive();
     }
 
     public void stopPlayersSittingOn(Player target) {
         for (UUID riderId : playerSeatTargets.entrySet().stream()
                 .filter(entry -> entry.getValue().equals(target.getUniqueId()))
-                .map(Map.Entry::getKey).toList()) {
+                .map(Map.Entry::getKey).collect(java.util.stream.Collectors.toList())) {
             Player rider = target.getServer().getPlayer(riderId);
             if (rider != null) stop(rider);
             else {
                 SeatEntity seat = seats.remove(riderId);
                 playerSeatTargets.remove(riderId);
-                if (seat != null && seat.isAlive()) seat.discard();
+                if (seat != null && seat.alive()) seat.remove();
             }
         }
     }
 
     public void clear() {
-        for (SeatEntity seat : seats.values()) if (seat.isAlive()) seat.discard();
+        for (SeatEntity seat : seats.values()) if (seat.alive()) seat.remove();
         seats.clear();
         playerSeatTargets.clear();
     }

@@ -1,6 +1,7 @@
 package dev.ledge.gesturing.gesture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -8,17 +9,17 @@ import org.junit.jupiter.api.Test;
 class GestureDirectionTest {
     @Test
     void parsesAllFourDirectionsWithoutCaseSensitivity() {
-        assertEquals(GestureDirection.EAST, GestureDirection.parse("EaSt").orElseThrow());
-        assertEquals(GestureDirection.WEST, GestureDirection.parse("west").orElseThrow());
-        assertEquals(GestureDirection.NORTH, GestureDirection.parse("NORTH").orElseThrow());
-        assertEquals(GestureDirection.SOUTH, GestureDirection.parse("south").orElseThrow());
+        assertEquals(GestureDirection.EAST, GestureDirection.parse("EaSt").get());
+        assertEquals(GestureDirection.WEST, GestureDirection.parse("west").get());
+        assertEquals(GestureDirection.NORTH, GestureDirection.parse("NORTH").get());
+        assertEquals(GestureDirection.SOUTH, GestureDirection.parse("south").get());
     }
 
     @Test
     void rejectsUnknownDirections() {
-        assertTrue(GestureDirection.parse("up").isEmpty());
-        assertTrue(GestureDirection.parse("").isEmpty());
-        assertTrue(GestureDirection.parse(" east ").isEmpty());
-        assertTrue(GestureDirection.parse(null).isEmpty());
+        assertFalse(GestureDirection.parse("up").isPresent());
+        assertFalse(GestureDirection.parse("").isPresent());
+        assertFalse(GestureDirection.parse(" east ").isPresent());
+        assertFalse(GestureDirection.parse(null).isPresent());
     }
 }

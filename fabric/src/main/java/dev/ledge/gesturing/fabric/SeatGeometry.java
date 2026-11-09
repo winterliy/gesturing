@@ -107,7 +107,15 @@ public final class SeatGeometry {
     public enum Corner { LEFT, RIGHT }
     public enum Kind { FULL, BOTTOM_SLAB, TOP_SLAB, STAIRS, DIRECTIONAL }
 
-    public record Shape(Kind kind, boolean bottomHalf, Direction facing, Corner corner) {
+    public static final class Shape {
+        private final Kind kind; private final boolean bottomHalf; private final Direction facing; private final Corner corner;
+        public Shape(Kind kind, boolean bottomHalf, Direction facing, Corner corner) {
+            this.kind = kind; this.bottomHalf = bottomHalf; this.facing = facing; this.corner = corner;
+        }
+        public Kind kind() { return kind; }
+        public boolean bottomHalf() { return bottomHalf; }
+        public Direction facing() { return facing; }
+        public Corner corner() { return corner; }
         public static Shape full() { return new Shape(Kind.FULL, false, Direction.NORTH, null); }
         public static Shape bottomSlab() { return new Shape(Kind.BOTTOM_SLAB, false, Direction.NORTH, null); }
         public static Shape topSlab() { return new Shape(Kind.TOP_SLAB, false, Direction.NORTH, null); }
@@ -116,5 +124,12 @@ public final class SeatGeometry {
         public static Shape directional(Direction facing) { return new Shape(Kind.DIRECTIONAL, false, facing, null); }
     }
 
-    public record Offset(double x, double y, double z, float yaw) { }
+    public static final class Offset {
+        private final double x, y, z; private final float yaw;
+        public Offset(double x, double y, double z, float yaw) { this.x = x; this.y = y; this.z = z; this.yaw = yaw; }
+        public double x() { return x; }
+        public double y() { return y; }
+        public double z() { return z; }
+        public float yaw() { return yaw; }
+    }
 }
