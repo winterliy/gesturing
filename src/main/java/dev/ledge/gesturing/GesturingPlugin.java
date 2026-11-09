@@ -222,7 +222,7 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
 
     /** Bukkit 1.19.4 has no Entity#setPose, so set the NMS pose directly. */
     private static void setPose(Player player, Pose pose) {
-        ((org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer) player).getHandle()
+        ((org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer) player).getHandle()
                 .setPose(net.minecraft.world.entity.Pose.valueOf(pose.name()));
     }
 }

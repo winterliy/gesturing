@@ -42,9 +42,9 @@ import net.minecraft.world.level.block.state.properties.BedPart;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.v1_18_R2.CraftServer;
-import org.bukkit.craftbukkit.v1_18_R2.CraftWorld;
-import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_17_R1.CraftServer;
+import org.bukkit.craftbukkit.v1_17_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
@@ -97,7 +97,7 @@ public final class PoseNpc {
         this.kind = kind;
         this.serverPlayer = ((CraftPlayer) player).getHandle();
         this.lying = kind == PoseKind.LAY || kind == PoseKind.LEGS_UP;
-        this.renderRange = player.getWorld().getSimulationDistance() * 16;
+        this.renderRange = Math.min(Bukkit.getViewDistance(), 10) * 16;
 
         blockLocation = seatLocation.clone();
         blockLocation.setY(blockLocation.getWorld().getMinHeight());

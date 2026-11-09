@@ -8,7 +8,7 @@ import java.util.List;
 import net.minecraft.world.entity.AreaEffectCloud;
 import net.minecraft.world.entity.Entity;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_18_R2.CraftWorld;
+import org.bukkit.craftbukkit.v1_17_R1.CraftWorld;
 
 /**
  * Copyright (C) Gecolay and contributors.

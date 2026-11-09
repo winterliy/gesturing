@@ -35,7 +35,7 @@ public final class GesturingFabric implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> registerCommands(dispatcher));
         ServerTickEvents.END_SERVER_TICK.register(this::tick);
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> stop(handler.player, false));
-        System.out.println("[Gesturing] Fabric 0.3.2 initialized for Minecraft 1.18.2.");
+        System.out.println("[Gesturing] Fabric 0.3.2 initialized for Minecraft 1.17.1.");
     }
 
     private void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher) {

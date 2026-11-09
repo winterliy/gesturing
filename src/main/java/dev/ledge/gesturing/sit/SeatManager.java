@@ -10,8 +10,8 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.type.Stairs;
-import org.bukkit.craftbukkit.v1_18_R2.CraftWorld;
-import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_17_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 
@@ -41,7 +41,7 @@ public final class SeatManager {
             seat.discard();
             return false;
         }
-        if (!((CraftWorld) block.getWorld()).getHandle().addFreshEntity(seat, CreatureSpawnEvent.SpawnReason.CUSTOM)) {
+        if (!((CraftWorld) block.getWorld()).getHandle().addFreshEntity(seat)) {
             rider.stopRiding(true);
             seat.discard();
             return false;
@@ -63,7 +63,7 @@ public final class SeatManager {
             seat.discard();
             return false;
         }
-        if (!((CraftWorld) target.getWorld()).getHandle().addFreshEntity(seat, CreatureSpawnEvent.SpawnReason.CUSTOM)) {
+        if (!((CraftWorld) target.getWorld()).getHandle().addFreshEntity(seat)) {
             riderHandle.stopRiding(true);
             seat.stopRiding(true);
             seat.discard();
