@@ -1,19 +1,18 @@
-package dev.ledge.gesturing.nms.v1_14_R1;
+package dev.ledge.gesturing.nms.v1_13_R2;
 
-import net.minecraft.server.v1_14_R1.DamageSource;
-import net.minecraft.server.v1_14_R1.Entity;
-import net.minecraft.server.v1_14_R1.EntityArmorStand;
-import net.minecraft.server.v1_14_R1.EnumMoveType;
-import net.minecraft.server.v1_14_R1.Vec3D;
+import net.minecraft.server.v1_13_R2.DamageSource;
+import net.minecraft.server.v1_13_R2.Entity;
+import net.minecraft.server.v1_13_R2.EntityArmorStand;
+import net.minecraft.server.v1_13_R2.EnumMoveType;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_14_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_14_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_13_R2.CraftWorld;
+import org.bukkit.craftbukkit.v1_13_R2.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 
 /**
  * Copyright (C) Gecolay and contributors.
- * Adapted from GSit 3.8.0 (GPL-3.0-only), SeatEntity, for Spigot-mapped 1.16.5 (v1_14_R1).
+ * Adapted from GSit 3.8.0 (GPL-3.0-only), SeatEntity, for Spigot-mapped 1.16.5 (v1_13_R2).
  */
 public final class SeatEntity extends EntityArmorStand {
     private Runnable runnable;
@@ -44,7 +43,7 @@ public final class SeatEntity extends EntityArmorStand {
         }
     }
 
-    @Override public void move(EnumMoveType type, Vec3D movement) { }
+    @Override public void move(EnumMoveType type, double x, double y, double z) { }
     @Override public boolean damageEntity(DamageSource source, float amount) { return false; }
 
     // -- adapter API used by SeatManager (keeps NMS types out of version-neutral code) --

@@ -3,7 +3,7 @@ package dev.ledge.gesturing;
 import dev.ledge.gesturing.sit.SeatManager;
 import dev.ledge.gesturing.gesture.GestureDirection;
 import dev.ledge.gesturing.gesture.PoseKind;
-import dev.ledge.gesturing.nms.v1_14_R1.PoseNpc;
+import dev.ledge.gesturing.nms.v1_13_R2.PoseNpc;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 import java.util.HashMap;
@@ -19,7 +19,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Pose;
+import dev.ledge.gesturing.gesture.Pose;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -82,10 +82,7 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
             case "bellyflop" -> startPose(player, Pose.SWIMMING, new String[0], null, Gesture.BELLYFLOP);
             case "legsup" -> startPose(player, Pose.SLEEPING, new String[0], null, Gesture.LEGS_UP);
             case "spin" -> startPose(player, Pose.SPIN_ATTACK, new String[0], null, Gesture.SPIN);
-            case "crawl" -> {
-                if (active.get(player.getUniqueId()) == Gesture.CRAWL) stop(player, true);
-                else startPose(player, Pose.SWIMMING, new String[0], null, Gesture.CRAWL);
-            }
+            case "crawl" -> player.sendMessage(ChatColor.YELLOW + "이 버전에는 기어가기 자세가 없어 /crawl을 지원하지 않습니다.");
             case "stand" -> stop(player, true);
             default -> { return false; }
         }
@@ -161,7 +158,7 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
         if (ceiling != null && player.isOnline()) player.sendBlockChange(ceiling, ceiling.getBlock().getBlockData());
     }
 
-    private void remember(Player player) { originalPoses.putIfAbsent(player.getUniqueId(), player.getPose()); }
+    private void remember(Player player) { originalPoses.putIfAbsent(player.getUniqueId(), Pose.STANDING); }
 
     private void stop(Player player, boolean message) {
         UUID id = player.getUniqueId();
@@ -220,8 +217,6 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
 
     private enum Gesture { SIT, PLAYER_SIT, LAY, BELLYFLOP, LEGS_UP, SPIN, CRAWL }
 
-    /** Bukkit 1.19.4 has no Entity#setPose, so set the NMS pose directly. */
-    private static void setPose(Player player, Pose pose) {
-        dev.ledge.gesturing.nms.v1_14_R1.PoseAccess.setPose(player, pose.name());
-    }
+    /** Pre-1.14 clients have no pose state to set; the packet-copy poses do not need one. */
+    private static void setPose(Player player, Pose pose) { }
 }
