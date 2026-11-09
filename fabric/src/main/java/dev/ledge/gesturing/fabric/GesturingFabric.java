@@ -35,7 +35,7 @@ public final class GesturingFabric implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> registerCommands(dispatcher));
         ServerTickEvents.END_SERVER_TICK.register(this::tick);
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> stop(handler.player, false));
-        System.out.println("[Gesturing] Fabric 0.3.2 initialized for Minecraft 1.15.2.");
+        System.out.println("[Gesturing] Fabric 0.3.2 initialized for Minecraft 1.14.4.");
     }
 
     private void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -190,7 +190,7 @@ public final class GesturingFabric implements ModInitializer {
             GestureState state = entry.getValue();
             boolean dismounted = state.seat() != null && player.getVehicle() != state.seat();
             if (player.hurtTime > 0) { stop(player, false); continue; }
-            if (player.isShiftKeyDown() || dismounted
+            if (player.isSneaking() || dismounted
                     || (state.seat() == null && player.position().distanceToSqr(state.startedAt()) > 0.64d)) {
                 stop(player, false);
                 continue;

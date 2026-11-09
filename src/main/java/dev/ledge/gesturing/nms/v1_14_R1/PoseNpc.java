@@ -1,4 +1,4 @@
-package dev.ledge.gesturing.nms.v1_15_R1;
+package dev.ledge.gesturing.nms.v1_14_R1;
 
 import com.mojang.authlib.GameProfile;
 import dev.ledge.gesturing.gesture.PoseKind;
@@ -9,48 +9,48 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import net.minecraft.server.v1_15_R1.BlockBed;
-import net.minecraft.server.v1_15_R1.BlockPosition;
-import net.minecraft.server.v1_15_R1.BlockPropertyBedPart;
-import net.minecraft.server.v1_15_R1.Blocks;
-import net.minecraft.server.v1_15_R1.DataWatcher;
-import net.minecraft.server.v1_15_R1.DataWatcherObject;
-import net.minecraft.server.v1_15_R1.EntityHuman;
-import net.minecraft.server.v1_15_R1.EntityLiving;
-import net.minecraft.server.v1_15_R1.EntityPlayer;
-import net.minecraft.server.v1_15_R1.EntityPose;
-import net.minecraft.server.v1_15_R1.EnumDirection;
-import net.minecraft.server.v1_15_R1.EnumItemSlot;
-import net.minecraft.server.v1_15_R1.ItemStack;
-import net.minecraft.server.v1_15_R1.MinecraftServer;
-import net.minecraft.server.v1_15_R1.MobEffects;
-import net.minecraft.server.v1_15_R1.NBTTagCompound;
-import net.minecraft.server.v1_15_R1.Packet;
-import net.minecraft.server.v1_15_R1.PacketPlayOutBlockChange;
-import net.minecraft.server.v1_15_R1.PacketPlayOutEntity;
-import net.minecraft.server.v1_15_R1.PacketPlayOutEntityDestroy;
-import net.minecraft.server.v1_15_R1.PacketPlayOutEntityEquipment;
-import net.minecraft.server.v1_15_R1.PacketPlayOutEntityHeadRotation;
-import net.minecraft.server.v1_15_R1.PacketPlayOutEntityMetadata;
-import net.minecraft.server.v1_15_R1.PacketPlayOutEntityTeleport;
-import net.minecraft.server.v1_15_R1.PacketPlayOutMount;
-import net.minecraft.server.v1_15_R1.PacketPlayOutNamedEntitySpawn;
-import net.minecraft.server.v1_15_R1.PacketPlayOutPlayerInfo;
-import net.minecraft.server.v1_15_R1.PacketPlayOutSpawnEntity;
-import net.minecraft.server.v1_15_R1.PlayerInteractManager;
-import net.minecraft.server.v1_15_R1.WorldServer;
+import net.minecraft.server.v1_14_R1.BlockBed;
+import net.minecraft.server.v1_14_R1.BlockPosition;
+import net.minecraft.server.v1_14_R1.BlockPropertyBedPart;
+import net.minecraft.server.v1_14_R1.Blocks;
+import net.minecraft.server.v1_14_R1.DataWatcher;
+import net.minecraft.server.v1_14_R1.DataWatcherObject;
+import net.minecraft.server.v1_14_R1.EntityHuman;
+import net.minecraft.server.v1_14_R1.EntityLiving;
+import net.minecraft.server.v1_14_R1.EntityPlayer;
+import net.minecraft.server.v1_14_R1.EntityPose;
+import net.minecraft.server.v1_14_R1.EnumDirection;
+import net.minecraft.server.v1_14_R1.EnumItemSlot;
+import net.minecraft.server.v1_14_R1.ItemStack;
+import net.minecraft.server.v1_14_R1.MinecraftServer;
+import net.minecraft.server.v1_14_R1.MobEffects;
+import net.minecraft.server.v1_14_R1.NBTTagCompound;
+import net.minecraft.server.v1_14_R1.Packet;
+import net.minecraft.server.v1_14_R1.PacketPlayOutBlockChange;
+import net.minecraft.server.v1_14_R1.PacketPlayOutEntity;
+import net.minecraft.server.v1_14_R1.PacketPlayOutEntityDestroy;
+import net.minecraft.server.v1_14_R1.PacketPlayOutEntityEquipment;
+import net.minecraft.server.v1_14_R1.PacketPlayOutEntityHeadRotation;
+import net.minecraft.server.v1_14_R1.PacketPlayOutEntityMetadata;
+import net.minecraft.server.v1_14_R1.PacketPlayOutEntityTeleport;
+import net.minecraft.server.v1_14_R1.PacketPlayOutMount;
+import net.minecraft.server.v1_14_R1.PacketPlayOutNamedEntitySpawn;
+import net.minecraft.server.v1_14_R1.PacketPlayOutPlayerInfo;
+import net.minecraft.server.v1_14_R1.PacketPlayOutSpawnEntity;
+import net.minecraft.server.v1_14_R1.PlayerInteractManager;
+import net.minecraft.server.v1_14_R1.WorldServer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.v1_15_R1.CraftServer;
-import org.bukkit.craftbukkit.v1_15_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_15_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_14_R1.CraftServer;
+import org.bukkit.craftbukkit.v1_14_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_14_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 /**
  * Copyright (C) Gecolay and contributors.
- * Adapted from GSit 3.8.0 (GPL-3.0-only), Pose model, for Spigot-mapped 1.16.5 (v1_15_R1).
+ * Adapted from GSit 3.8.0 (GPL-3.0-only), Pose model, for Spigot-mapped 1.16.5 (v1_14_R1).
  * Gesturing changes: GSit services/config removed; the pose is a packet-only player copy attached to
  * Gesturing's seat entity, so the real player never sleeps (no bed screen, no darkening, no spawn change).
  */
@@ -58,11 +58,11 @@ public final class PoseNpc {
     private static final double BASE_OFFSET = -0.025d;
 
     private static final DataWatcherObject<Byte> LIVING_FLAGS = findStatic(EntityLiving.class, 7, Byte.class);
-    private static final DataWatcherObject<Optional<BlockPosition>> SLEEP_POS = findStatic(EntityLiving.class, 13, Optional.class);
-    private static final DataWatcherObject<Byte> SKIN = EntityHuman.getSkinPartsWatcher();
-    private static final DataWatcherObject<Byte> MAIN_HAND = findStatic(EntityHuman.class, 17, Byte.class);
-    private static final DataWatcherObject<NBTTagCompound> LEFT_SHOULDER = findStatic(EntityHuman.class, 18, NBTTagCompound.class);
-    private static final DataWatcherObject<NBTTagCompound> RIGHT_SHOULDER = findStatic(EntityHuman.class, 19, NBTTagCompound.class);
+    private static final DataWatcherObject<Optional<BlockPosition>> SLEEP_POS = findStatic(EntityLiving.class, 12, Optional.class);
+    private static final DataWatcherObject<Byte> SKIN = findStatic(EntityHuman.class, 15, Byte.class);
+    private static final DataWatcherObject<Byte> MAIN_HAND = findStatic(EntityHuman.class, 16, Byte.class);
+    private static final DataWatcherObject<NBTTagCompound> LEFT_SHOULDER = findStatic(EntityHuman.class, 17, NBTTagCompound.class);
+    private static final DataWatcherObject<NBTTagCompound> RIGHT_SHOULDER = findStatic(EntityHuman.class, 18, NBTTagCompound.class);
 
     private final SeatEntity seat;
     private final Location seatLocation;

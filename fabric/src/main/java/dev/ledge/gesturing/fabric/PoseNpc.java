@@ -278,8 +278,7 @@ final class PoseNpc {
     }
 
     private static ClientboundAddEntityPacket addEntity(Entity entity) {
-        return new ClientboundAddEntityPacket(entity.getId(), entity.getUUID(), entity.getX(), entity.getY(), entity.getZ(),
-                entity.xRot, entity.yRot, entity.getType(), 0, entity.getDeltaMovement());
+        return new ClientboundAddEntityPacket(entity);
     }
 
     private static void attach(Entity passenger, Entity vehicle) {

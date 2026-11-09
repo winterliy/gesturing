@@ -1,8 +1,8 @@
-package dev.ledge.gesturing.nms.v1_15_R1;
+package dev.ledge.gesturing.nms.v1_14_R1;
 
 import java.lang.reflect.Method;
-import net.minecraft.server.v1_15_R1.Entity;
-import net.minecraft.server.v1_15_R1.EntityPose;
+import net.minecraft.server.v1_14_R1.Entity;
+import net.minecraft.server.v1_14_R1.EntityPose;
 
 /** Access to members that are protected in this release. */
 final class NmsReflect {
