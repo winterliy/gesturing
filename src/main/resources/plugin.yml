@@ -24,10 +24,6 @@ commands:
     description: Spin in place.
     usage: /spin
     permission: gesturing.pose
-  crawl:
-    description: Toggle crawling.
-    usage: /crawl
-    permission: gesturing.crawl
   stand:
     description: Stop your current gesture.
     usage: /stand
@@ -38,8 +34,6 @@ permissions:
   gesturing.lay:
     default: true
   gesturing.pose:
-    default: true
-  gesturing.crawl:
     default: true
   gesturing.stand:
     default: true

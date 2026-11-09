@@ -45,7 +45,7 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
 
     @Override public void onEnable() {
         getServer().getPluginManager().registerEvents(this, this);
-        for (String command : new String[]{"sit", "lay", "bellyflop", "legsup", "spin", "crawl", "stand"}) {
+        for (String command : new String[]{"sit", "lay", "bellyflop", "legsup", "spin", "stand"}) {
             var registered = getCommand(command);
             if (registered == null) throw new IllegalStateException("Missing command in plugin.yml: " + command);
             registered.setExecutor(this);
@@ -82,7 +82,6 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
             case "bellyflop" -> startPose(player, Pose.SWIMMING, new String[0], null, Gesture.BELLYFLOP);
             case "legsup" -> startPose(player, Pose.SLEEPING, new String[0], null, Gesture.LEGS_UP);
             case "spin" -> startPose(player, Pose.SPIN_ATTACK, new String[0], null, Gesture.SPIN);
-            case "crawl" -> player.sendMessage(ChatColor.YELLOW + "이 버전에는 기어가기 자세가 없어 /crawl을 지원하지 않습니다.");
             case "stand" -> stop(player, true);
             default -> { return false; }
         }
