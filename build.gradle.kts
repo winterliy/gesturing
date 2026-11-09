@@ -12,7 +12,7 @@ repositories {
 
 // Paper 1.16.5 has no userdev bundle: compile against the patched (Spigot-mapped) server jar produced by Paper itself.
 // Obtain it with: java -jar paper-1.15.2.jar (cache/patched_1.12.2.jar) and pass -PserverJar=<path>.
-val serverJar = providers.gradleProperty("serverJar").orElse("libs/server-1.12.2.jar")
+val serverJar = providers.gradleProperty("serverJar").orElse("libs/server-1.8.8.jar")
 
 dependencies {
     annotationProcessor("com.pkware.jabel:jabel-javac-plugin:1.0.1-2")

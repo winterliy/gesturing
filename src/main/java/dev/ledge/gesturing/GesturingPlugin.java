@@ -3,7 +3,7 @@ package dev.ledge.gesturing;
 import dev.ledge.gesturing.sit.SeatManager;
 import dev.ledge.gesturing.gesture.GestureDirection;
 import dev.ledge.gesturing.gesture.PoseKind;
-import dev.ledge.gesturing.nms.v1_12_R1.PoseNpc;
+import dev.ledge.gesturing.nms.v1_8_R3.PoseNpc;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 import java.util.HashMap;
@@ -45,7 +45,7 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
 
     @Override public void onEnable() {
         getServer().getPluginManager().registerEvents(this, this);
-        for (String command : new String[]{"sit", "lay", "bellyflop", "legsup", "stand"}) {
+        for (String command : new String[]{"sit", "lay", "stand"}) {
             var registered = getCommand(command);
             if (registered == null) throw new IllegalStateException("Missing command in plugin.yml: " + command);
             registered.setExecutor(this);
@@ -79,8 +79,6 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
                 else player.sendMessage(ChatColor.YELLOW + "사용법: /sit [toggle|playertoggle]");
             }
             case "lay" -> startPose(player, Pose.SLEEPING, args, "사용법: /lay [east|west|south|north]", Gesture.LAY);
-            case "bellyflop" -> startPose(player, Pose.SWIMMING, new String[0], null, Gesture.BELLYFLOP);
-            case "legsup" -> startPose(player, Pose.SLEEPING, new String[0], null, Gesture.LEGS_UP);
             case "stand" -> stop(player, true);
             default -> { return false; }
         }
@@ -112,10 +110,7 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
             facing.setYaw(GestureDirection.parse(args[0]).get().yaw());
             player.teleport(facing);
         }
-        PoseKind npcKind = switch (gesture) {
-            case LAY -> PoseKind.LAY; case LEGS_UP -> PoseKind.LEGS_UP;
-            case BELLYFLOP -> PoseKind.BELLYFLOP; case SPIN -> PoseKind.SPIN; default -> null;
-        };
+        PoseKind npcKind = gesture == Gesture.LAY ? PoseKind.LAY : null;
         if (npcKind != null) {
             float yaw = explicitDirection ? GestureDirection.parse(args[0]).get().yaw() : player.getLocation().getYaw();
             if (!seats.sitOnSupportingBlock(player, yaw)) {
@@ -172,7 +167,8 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onPlayerClick(PlayerInteractEntityEvent event) {
-        if (event.getHand() != EquipmentSlot.HAND || !(event.getRightClicked() instanceof Player target)) return;
+        if (!(event.getRightClicked() instanceof Player)) return;
+        Player target = (Player) event.getRightClicked();
         Player rider = event.getPlayer();
         if (playerSitOptOut.contains(target.getUniqueId()) || rider == target) return;
         stop(rider, false);

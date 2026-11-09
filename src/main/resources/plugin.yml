@@ -1,8 +1,8 @@
 name: Gesturing
 version: '${version}'
 main: dev.ledge.gesturing.GesturingPlugin
-api-version: '1.12'
-description: Standalone Paper/Paper 1.12.2 gesture and seating plugin.
+api-version: '1.8'
+description: Standalone Paper/Paper 1.8.8 gesture and seating plugin.
 commands:
   sit:
     description: Sit on the supporting block or toggle player sitting.
@@ -12,14 +12,6 @@ commands:
     description: Lie down facing a compass direction.
     usage: /lay <east|west|south|north>
     permission: gesturing.lay
-  bellyflop:
-    description: Lie face-down.
-    usage: /bellyflop
-    permission: gesturing.pose
-  legsup:
-    description: Lie on your back with legs raised.
-    usage: /legsup
-    permission: gesturing.pose
   stand:
     description: Stop your current gesture.
     usage: /stand
@@ -28,8 +20,6 @@ permissions:
   gesturing.sit:
     default: true
   gesturing.lay:
-    default: true
-  gesturing.pose:
     default: true
   gesturing.stand:
     default: true

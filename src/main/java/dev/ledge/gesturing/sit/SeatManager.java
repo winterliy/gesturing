@@ -1,6 +1,6 @@
 package dev.ledge.gesturing.sit;
 
-import dev.ledge.gesturing.nms.v1_12_R1.SeatEntity;
+import dev.ledge.gesturing.nms.v1_8_R3.SeatEntity;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -32,12 +32,7 @@ public final class SeatManager {
         Location location = new Location(block.getWorld(), block.getX() + offset.x(), block.getY() + offset.y() - 0.025,
                 block.getZ() + offset.z(), directional ? offset.yaw() : yaw, 0f);
         SeatEntity seat = new SeatEntity(location);
-        if (!seat.mount(player)) {
-            seat.remove();
-            return false;
-        }
-        if (!seat.spawn(block.getWorld())) {
-            SeatEntity.dismount(player);
+        if (!seat.spawn(block.getWorld()) || !seat.mount(player)) {
             seat.remove();
             return false;
         }
@@ -51,12 +46,6 @@ public final class SeatManager {
         stop(rider);
         SeatEntity seat = new SeatEntity(target.getLocation().add(0, 0.15, 0));
         if (!seat.mountOn(target) || !seat.mount(rider)) {
-            SeatEntity.dismount(rider);
-            seat.dismountSelf();
-            seat.remove();
-            return false;
-        }
-        if (!seat.spawn(target.getWorld())) {
             SeatEntity.dismount(rider);
             seat.dismountSelf();
             seat.remove();
