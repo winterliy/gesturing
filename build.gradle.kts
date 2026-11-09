@@ -14,7 +14,6 @@ repositories {
 // Obtain it with: java -jar paper-1.16.5-794.jar (cache/patched_1.16.5.jar) and pass -PserverJar=<path>.
 val serverJar = providers.gradleProperty("serverJar").orElse("libs/server-1.16.5.jar")
 
-
 dependencies {
     annotationProcessor("com.pkware.jabel:jabel-javac-plugin:1.0.1-2")
     compileOnly("com.pkware.jabel:jabel-javac-plugin:1.0.1-2")
