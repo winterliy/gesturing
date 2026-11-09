@@ -45,7 +45,7 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
 
     @Override public void onEnable() {
         getServer().getPluginManager().registerEvents(this, this);
-        for (String command : new String[]{"sit", "lay", "bellyflop", "legsup", "spin", "stand"}) {
+        for (String command : new String[]{"sit", "lay", "bellyflop", "legsup", "stand"}) {
             var registered = getCommand(command);
             if (registered == null) throw new IllegalStateException("Missing command in plugin.yml: " + command);
             registered.setExecutor(this);
@@ -81,7 +81,6 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
             case "lay" -> startPose(player, Pose.SLEEPING, args, "사용법: /lay [east|west|south|north]", Gesture.LAY);
             case "bellyflop" -> startPose(player, Pose.SWIMMING, new String[0], null, Gesture.BELLYFLOP);
             case "legsup" -> startPose(player, Pose.SLEEPING, new String[0], null, Gesture.LEGS_UP);
-            case "spin" -> startPose(player, Pose.SPIN_ATTACK, new String[0], null, Gesture.SPIN);
             case "stand" -> stop(player, true);
             default -> { return false; }
         }

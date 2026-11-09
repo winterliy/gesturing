@@ -22,7 +22,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 
-/** Server-side gestures for Minecraft 1.12.2 on Legacy Fabric: /sit, /lay, /bellyflop, /legsup, /spin, /stand. */
+/** Server-side gestures for Minecraft 1.12.2 on Legacy Fabric: /sit, /lay, /bellyflop, /legsup, /stand. */
 public final class GesturingFabric implements ModInitializer {
     private final Map<UUID, State> active = new HashMap<>();
 
@@ -39,7 +39,6 @@ public final class GesturingFabric implements ModInitializer {
         manager.registerCommand(new Cmd("lay", (p, a) -> lay(p, a)));
         manager.registerCommand(new Cmd("bellyflop", (p, a) -> npcPose(p, PoseNpc.Kind.BELLYFLOP, null, "엎드렸습니다.")));
         manager.registerCommand(new Cmd("legsup", (p, a) -> npcPose(p, PoseNpc.Kind.LEGS_UP, null, "다리를 올리고 누웠습니다.")));
-        manager.registerCommand(new Cmd("spin", (p, a) -> npcPose(p, PoseNpc.Kind.SPIN, null, "회전을 시작했습니다.")));
         manager.registerCommand(new Cmd("stand", (p, a) -> { if (!stop(p, false)) msg(p, "현재 동작 중이 아닙니다."); else msg(p, "동작을 종료했습니다."); }));
     }
 

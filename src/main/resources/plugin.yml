@@ -20,10 +20,6 @@ commands:
     description: Lie on your back with legs raised.
     usage: /legsup
     permission: gesturing.pose
-  spin:
-    description: Spin in place.
-    usage: /spin
-    permission: gesturing.pose
   stand:
     description: Stop your current gesture.
     usage: /stand
