@@ -20,8 +20,6 @@ import net.minecraft.network.packet.s2c.play.EntityTrackerUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerSpawnS2CPacket;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
 
 /**
  * Packet-only copy of the player lying in a bed pose, adapted from GSit (GPL-3.0-only) for Legacy Fabric 1.8.9.
@@ -35,17 +33,18 @@ final class PoseNpc {
     private final ServerPlayerEntity player;
     private final ServerWorld world;
     private final ServerPlayerEntity npc;
-    private final BlockPos bedPos;
+    private final int bedX, bedY, bedZ;
     private final int bedFacing;
     private final Set<ServerPlayerEntity> viewers = new HashSet<>();
-    private List<Packet<?>> bundle = new ArrayList<>();
-    private List<Packet<?>> hiddenEquipment;
+    private List<Packet> bundle = new ArrayList<>();
+    private List<Packet> hiddenEquipment;
     private float lastYaw = Float.NaN;
+    private int intIndex;
 
-    PoseNpc(ServerPlayerEntity player, Vec3d seatPos, float seatYaw) {
+    PoseNpc(ServerPlayerEntity player, double[] seatPos, float seatYaw) {
         this.player = player;
         this.world = player.getServerWorld();
-        bedPos = new BlockPos((int) Math.floor(seatPos.x), 0, (int) Math.floor(seatPos.z));
+        bedX = (int) Math.floor(seatPos[0]); bedY = 0; bedZ = (int) Math.floor(seatPos[2]);
         float yaw = seatYaw % 360f;
         if (yaw >= 180f) yaw -= 360f;
         if (yaw < -180f) yaw += 360f;
@@ -55,7 +54,7 @@ final class PoseNpc {
         profile.getProperties().putAll(player.getGameProfile().getProperties());
         npc = new ServerPlayerEntity(world.getServer(), world, profile, new net.minecraft.server.network.ServerPlayerInteractionManager(world));
         npc.networkHandler = player.networkHandler;
-        npc.updatePositionAndAngles(seatPos.x, seatPos.y - BASE_OFFSET + 0.1125d, seatPos.z, 0f, 0f);
+        npc.updatePositionAndAngles(seatPos[0], seatPos[1] - BASE_OFFSET + 0.1125d, seatPos[2], 0f, 0f);
     }
 
     void spawn() {
@@ -63,11 +62,11 @@ final class PoseNpc {
         npcData.setProperty(10, player.getDataTracker().getByte(10));
         player.setInvisible(true);
 
-        List<Packet<?>> packets = new ArrayList<>();
-        packets.add(new PlayerListS2CPacket(PlayerListS2CPacket.Action.ADD_PLAYER, npc));
+        List<Packet> packets = new ArrayList<>();
+        packets.add(new PlayerListS2CPacket(npc.getGameProfile().getName(), true, 0));
         packets.add(new PlayerSpawnS2CPacket(npc));
         packets.add(new EntityTrackerUpdateS2CPacket(npc.getEntityId(), npcData, true));
-        packets.add(new BedSleepS2CPacket(npc, bedPos));
+        packets.add(new BedSleepS2CPacket(npc, bedX, bedY, bedZ));
         packets.addAll(equipment(npc.getEntityId(), true));
         bundle = packets;
         addViewer(player);
@@ -95,26 +94,32 @@ final class PoseNpc {
     private void addViewer(ServerPlayerEntity viewer) {
         viewers.add(viewer);
         send(viewer, bedBlock());
-        for (Packet<?> packet : bundle) send(viewer, packet);
+        for (Packet packet : bundle) send(viewer, packet);
         send(viewer, new EntityPositionS2CPacket(npc));
     }
 
     private void removeViewer(ServerPlayerEntity viewer) {
-        send(viewer, new PlayerListS2CPacket(PlayerListS2CPacket.Action.REMOVE_PLAYER, npc));
+        send(viewer, new PlayerListS2CPacket(npc.getGameProfile().getName(), false, 0));
         send(viewer, new EntitiesDestroyS2CPacket(npc.getEntityId()));
-        send(viewer, new BlockUpdateS2CPacket(world, bedPos));
+        send(viewer, new BlockUpdateS2CPacket(bedX, bedY, bedZ, world));
     }
 
     /** Fake bed block: a block-update packet whose state is replaced by the bed head with the pose's facing. */
-    private Packet<?> bedBlock() {
+    private Packet bedBlock() {
+        intIndex = 0;
         BlockUpdateS2CPacket packet = new BlockUpdateS2CPacket();
         try {
             for (Field field : BlockUpdateS2CPacket.class.getDeclaredFields()) {
                 field.setAccessible(true);
-                if (field.getType() == BlockPos.class) field.set(packet, bedPos);
-                else if (field.getType() == net.minecraft.block.BlockState.class) {
-                    net.minecraft.block.Block bed = net.minecraft.block.Blocks.BED;
-                    field.set(packet, bed.stateFromData(bedFacing | 8));
+                if (field.getType() == net.minecraft.block.Block.class) field.set(packet, net.minecraft.block.Blocks.BED);
+                else if (field.getType() == int.class) {
+                    // the packet stores x, y, z then the block metadata in declaration order
+                    switch (field.getName().length() > 0 ? intIndex++ : 0) {
+                        case 0: field.setInt(packet, bedX); break;
+                        case 1: field.setInt(packet, bedY); break;
+                        case 2: field.setInt(packet, bedZ); break;
+                        default: field.setInt(packet, bedFacing | 8);
+                    }
                 }
             }
         } catch (ReflectiveOperationException e) { throw new IllegalStateException(e); }
@@ -131,23 +136,23 @@ final class PoseNpc {
         for (ServerPlayerEntity viewer : viewers) send(viewer, head);
     }
 
-    private List<Packet<?>> equipment(int entityId, boolean visible) {
-        List<Packet<?>> list = new ArrayList<>();
+    private List<Packet> equipment(int entityId, boolean visible) {
+        List<Packet> list = new ArrayList<>();
         for (int slot = 0; slot < 5; slot++) {
-            list.add(new EntityEquipmentUpdateS2CPacket(entityId, slot, visible ? (slot == 0 ? player.getStackInHand() : player.getArmorSlot(slot - 1)) : null));
+            list.add(new EntityEquipmentUpdateS2CPacket(entityId, slot, visible ? player.getMainSlot(slot) : null));
         }
         return list;
     }
 
     private void setEquipmentVisibility(boolean visible) {
-        List<Packet<?>> list;
+        List<Packet> list;
         if (!visible && hiddenEquipment != null) list = hiddenEquipment;
         else {
             list = equipment(player.getEntityId(), visible);
             if (!visible) hiddenEquipment = list;
         }
-        for (ServerPlayerEntity viewer : viewers) for (Packet<?> packet : list) send(viewer, packet);
+        for (ServerPlayerEntity viewer : viewers) for (Packet packet : list) send(viewer, packet);
     }
 
-    private static void send(ServerPlayerEntity viewer, Packet<?> packet) { viewer.networkHandler.sendPacket(packet); }
+    private static void send(ServerPlayerEntity viewer, Packet packet) { viewer.networkHandler.sendPacket(packet); }
 }
