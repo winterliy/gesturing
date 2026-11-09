@@ -35,7 +35,7 @@ public final class GesturingFabric implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> registerCommands(dispatcher));
         ServerTickEvents.END_SERVER_TICK.register(this::tick);
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> stop(handler.player, false));
-        System.out.println("[Gesturing] Fabric 0.3.2 initialized for Minecraft 1.16.5.");
+        System.out.println("[Gesturing] Fabric 0.3.2 initialized for Minecraft 1.15.2.");
     }
 
     private void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -64,17 +64,17 @@ public final class GesturingFabric implements ModInitializer {
         GestureState state = seat(player, null, Pose.STANDING);
         if (state == null) return 0;
         active.put(player.getUUID(), state);
-        player.sendMessage(new net.minecraft.network.chat.TextComponent("앉았습니다. 웅크리거나 /stand를 입력하면 일어납니다."), net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new net.minecraft.network.chat.TextComponent("앉았습니다. 웅크리거나 /stand를 입력하면 일어납니다."));
         return 1;
     }
 
     /** Mounts the player on an invisible seat on the supporting block; yawOverride is used for non-directional blocks. */
     private GestureState seat(ServerPlayer player, Float yawOverride, Pose pose) {
-        BlockPos support = player.blockPosition().below();
+        BlockPos support = new BlockPos(player).below();
         ServerLevel level = (ServerLevel) player.level;
         BlockState state = level.getBlockState(support);
         if (state.isAir() || !state.getFluidState().isEmpty()) {
-            player.sendMessage(new net.minecraft.network.chat.TextComponent("앉을 수 있는 블록을 찾지 못했습니다."), net.minecraft.Util.NIL_UUID);
+            player.sendMessage(new net.minecraft.network.chat.TextComponent("앉을 수 있는 블록을 찾지 못했습니다."));
             return null;
         }
         Offset offset = SeatGeometry.offsetFor(state);
@@ -89,7 +89,7 @@ public final class GesturingFabric implements ModInitializer {
         if (!rider.startRiding(seat, true) || !level.addFreshEntity(seat)) {
             rider.stopRiding();
             seat.remove();
-            player.sendMessage(new net.minecraft.network.chat.TextComponent("좌석을 만들지 못했습니다."), net.minecraft.Util.NIL_UUID);
+            player.sendMessage(new net.minecraft.network.chat.TextComponent("좌석을 만들지 못했습니다."));
             return null;
         }
         return new GestureState(player.getPose(), pose, seat, returnPos, null, null, new Vec3(x, y, z), yaw);
@@ -126,21 +126,21 @@ public final class GesturingFabric implements ModInitializer {
         PoseNpc npc = new PoseNpc(player, state.seatPos(), state.seatYaw(), kind);
         npc.spawn();
         active.put(player.getUUID(), state.withNpc(npc));
-        player.sendMessage(new net.minecraft.network.chat.TextComponent(message + " 웅크리거나 /stand를 입력하면 일어납니다."), net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new net.minecraft.network.chat.TextComponent(message + " 웅크리거나 /stand를 입력하면 일어납니다."));
         return 1;
     }
 
     private int crawl(ServerPlayer player) {
         stop(player, false);
         GestureState state = new GestureState(player.getPose(), Pose.SWIMMING, null, player.position(), null, null, null, 0f);
-        BlockPos ceiling = player.blockPosition().above();
+        BlockPos ceiling = new BlockPos(player).above();
         if (player.level.getBlockState(ceiling).isAir()) {
-            player.connection.send(new ClientboundBlockUpdatePacket(ceiling, Blocks.BARRIER.defaultBlockState()));
+            player.connection.send(PoseNpc.blockUpdate(ceiling, Blocks.BARRIER.defaultBlockState()));
             state = state.withCeiling(ceiling);
         }
-        player.setPose(Pose.SWIMMING);
+        PoseNpc.setPose(player, Pose.SWIMMING);
         active.put(player.getUUID(), state);
-        player.sendMessage(new net.minecraft.network.chat.TextComponent("기어갑니다. 이동하거나 웅크리면 종료됩니다."), net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new net.minecraft.network.chat.TextComponent("기어갑니다. 이동하거나 웅크리면 종료됩니다."));
         return 1;
     }
 
@@ -154,7 +154,7 @@ public final class GesturingFabric implements ModInitializer {
     private int stand(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         ServerPlayer player = source.getPlayerOrException();
         if (stop(player, true)) return 1;
-        player.sendMessage(new net.minecraft.network.chat.TextComponent("현재 동작 중이 아닙니다."), net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new net.minecraft.network.chat.TextComponent("현재 동작 중이 아닙니다."));
         return 0;
     }
 
@@ -178,8 +178,8 @@ public final class GesturingFabric implements ModInitializer {
         if (state.ceiling() != null && !player.removed) {
             player.connection.send(new ClientboundBlockUpdatePacket(player.level, state.ceiling()));
         }
-        if (!player.removed && state.seat() == null) player.setPose(state.originalPose());
-        if (notify) player.sendMessage(new net.minecraft.network.chat.TextComponent("동작을 종료했습니다."), net.minecraft.Util.NIL_UUID);
+        if (!player.removed && state.seat() == null) PoseNpc.setPose(player, state.originalPose());
+        if (notify) player.sendMessage(new net.minecraft.network.chat.TextComponent("동작을 종료했습니다."));
         return true;
     }
 

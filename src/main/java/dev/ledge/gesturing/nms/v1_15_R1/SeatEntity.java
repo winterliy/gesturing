@@ -1,19 +1,19 @@
-package dev.ledge.gesturing.nms.v1_16_R3;
+package dev.ledge.gesturing.nms.v1_15_R1;
 
-import net.minecraft.server.v1_16_R3.DamageSource;
-import net.minecraft.server.v1_16_R3.Entity;
-import net.minecraft.server.v1_16_R3.EntityArmorStand;
-import net.minecraft.server.v1_16_R3.EnumMoveType;
-import net.minecraft.server.v1_16_R3.Vec3D;
+import net.minecraft.server.v1_15_R1.DamageSource;
+import net.minecraft.server.v1_15_R1.Entity;
+import net.minecraft.server.v1_15_R1.EntityArmorStand;
+import net.minecraft.server.v1_15_R1.EnumMoveType;
+import net.minecraft.server.v1_15_R1.Vec3D;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_16_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_15_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_15_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 
 /**
  * Copyright (C) Gecolay and contributors.
- * Adapted from GSit 3.8.0 (GPL-3.0-only), SeatEntity, for Spigot-mapped 1.16.5 (v1_16_R3).
+ * Adapted from GSit 3.8.0 (GPL-3.0-only), SeatEntity, for Spigot-mapped 1.16.5 (v1_15_R1).
  */
 public final class SeatEntity extends EntityArmorStand {
     private Runnable runnable;

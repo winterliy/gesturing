@@ -3,7 +3,7 @@ package dev.ledge.gesturing;
 import dev.ledge.gesturing.sit.SeatManager;
 import dev.ledge.gesturing.gesture.GestureDirection;
 import dev.ledge.gesturing.gesture.PoseKind;
-import dev.ledge.gesturing.nms.v1_16_R3.PoseNpc;
+import dev.ledge.gesturing.nms.v1_15_R1.PoseNpc;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 import java.util.HashMap;
@@ -222,7 +222,6 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
 
     /** Bukkit 1.19.4 has no Entity#setPose, so set the NMS pose directly. */
     private static void setPose(Player player, Pose pose) {
-        ((org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer) player).getHandle()
-                .setPose(net.minecraft.server.v1_16_R3.EntityPose.valueOf(pose.name()));
+        dev.ledge.gesturing.nms.v1_15_R1.PoseAccess.setPose(player, pose.name());
     }
 }

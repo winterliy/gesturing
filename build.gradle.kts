@@ -11,15 +11,16 @@ repositories {
 }
 
 // Paper 1.16.5 has no userdev bundle: compile against the patched (Spigot-mapped) server jar produced by Paper itself.
-// Obtain it with: java -jar paper-1.16.5-794.jar (cache/patched_1.16.5.jar) and pass -PserverJar=<path>.
-val serverJar = providers.gradleProperty("serverJar").orElse("libs/server-1.16.5.jar")
+// Obtain it with: java -jar paper-1.15.2.jar (cache/patched_1.15.2.jar) and pass -PserverJar=<path>.
+val serverJar = providers.gradleProperty("serverJar").orElse("libs/server-1.15.2.jar")
 
 dependencies {
     annotationProcessor("com.pkware.jabel:jabel-javac-plugin:1.0.1-2")
     compileOnly("com.pkware.jabel:jabel-javac-plugin:1.0.1-2")
-    compileOnly("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
+    compileOnly("com.destroystokyo.paper:paper-api:1.15.2-R0.1-SNAPSHOT")
+    compileOnly("org.jetbrains:annotations:24.1.0")
     compileOnly(files(serverJar))
-    testImplementation("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
+    testImplementation("com.destroystokyo.paper:paper-api:1.15.2-R0.1-SNAPSHOT")
     testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

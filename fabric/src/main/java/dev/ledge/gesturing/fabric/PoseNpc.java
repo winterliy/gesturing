@@ -25,7 +25,7 @@ import net.minecraft.network.protocol.game.ClientboundPlayerInfoPacket;
 import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
 import net.minecraft.network.protocol.game.ClientboundRotateHeadPacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
-import net.minecraft.network.protocol.game.ClientboundSetEquipmentPacket;
+import net.minecraft.network.protocol.game.ClientboundSetEquippedItemPacket;
 import net.minecraft.network.protocol.game.ClientboundSetPassengersPacket;
 import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket;
 import net.minecraft.network.protocol.game.ClientboundUpdateAttributesPacket;
@@ -83,7 +83,7 @@ final class PoseNpc {
     private List<Packet<ClientGamePacketListener>> bundle;
     private ClientboundTeleportEntityPacket teleportPacket;
     private ClientboundBlockUpdatePacket bedPacket;
-    private ClientboundSetEquipmentPacket hiddenEquipment;
+    private List<Packet<ClientGamePacketListener>> hiddenEquipment;
     private float directionCache = Float.NaN;
 
     PoseNpc(ServerPlayer player, Vec3 seatPos, float seatYaw, Kind kind) {
@@ -105,7 +105,7 @@ final class PoseNpc {
         npc.moveTo(seatPos.x, offset, seatPos.z, 0f, 0f);
 
         direction = directionOf(seatYaw);
-        if (lying) bedPacket = new ClientboundBlockUpdatePacket(bedPos, Blocks.WHITE_BED.defaultBlockState()
+        if (lying) bedPacket = blockUpdate(bedPos, Blocks.WHITE_BED.defaultBlockState()
                 .setValue(BedBlock.FACING, direction.getOpposite()).setValue(BedBlock.PART, BedPart.HEAD));
         addInfoPacket = new ClientboundPlayerInfoPacket(ClientboundPlayerInfoPacket.Action.ADD_PLAYER, npc);
         removeInfoPacket = new ClientboundPlayerInfoPacket(ClientboundPlayerInfoPacket.Action.REMOVE_PLAYER, npc);
@@ -145,7 +145,7 @@ final class PoseNpc {
 
         List<Packet<ClientGamePacketListener>> packets = new ArrayList<>();
         packets.add(addInfoPacket);
-        packets.add(addEntity(npc));
+        packets.add(new net.minecraft.network.protocol.game.ClientboundAddPlayerPacket(npc));
         if (kind == Kind.LEGS_UP) {
             attach(npc, vehicleEntity);
             packets.add(addEntity(vehicleEntity));
@@ -154,9 +154,8 @@ final class PoseNpc {
         }
         if (lying) packets.add(bedPacket);
         packets.add(new ClientboundSetEntityDataPacket(npc.getId(), npc.getEntityData(), true));
-        packets.add(new ClientboundUpdateAttributesPacket(npc.getId(), player.getAttributes().getSyncableAttributes()));
         if (kind == Kind.SPIN) packets.add(new ClientboundMoveEntityPacket.PosRot(npc.getId(), (short) 0, (short) 0, (short) 0, (byte) 0, fixedRotation(-90f), true));
-        packets.add(equipmentPacket());
+        packets.addAll(equipmentPackets(npc.getId(), true));
         bundle = packets;
         refreshViewers();
         setEquipmentVisibility(false);
@@ -236,25 +235,46 @@ final class PoseNpc {
         for (ServerPlayer viewer : viewers.keySet()) viewer.connection.send(head);
     }
 
-    private ClientboundSetEquipmentPacket equipmentPacket() {
-        List<Pair<EquipmentSlot, ItemStack>> list = new ArrayList<>();
-        for (EquipmentSlot slot : EquipmentSlot.values()) list.add(Pair.of(slot, player.getItemBySlot(slot)));
-        return new ClientboundSetEquipmentPacket(npc.getId(), list);
+    private List<Packet<ClientGamePacketListener>> equipmentPackets(int entityId, boolean visible) {
+        List<Packet<ClientGamePacketListener>> list = new ArrayList<>();
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
+            list.add(new ClientboundSetEquippedItemPacket(entityId, slot, visible ? player.getItemBySlot(slot) : ItemStack.EMPTY));
+        }
+        return list;
     }
 
     private void setEquipmentVisibility(boolean visible) {
         if (!visible && hiddenEquipment != null) {
-            for (ServerPlayer viewer : viewers.keySet()) viewer.connection.send(hiddenEquipment);
+            for (ServerPlayer viewer : viewers.keySet()) for (Packet<ClientGamePacketListener> packet : hiddenEquipment) viewer.connection.send(packet);
             return;
         }
-        List<Pair<EquipmentSlot, ItemStack>> list = new ArrayList<>();
-        for (EquipmentSlot slot : EquipmentSlot.values()) list.add(Pair.of(slot, visible ? player.getItemBySlot(slot) : ItemStack.EMPTY));
-        ClientboundSetEquipmentPacket packet = new ClientboundSetEquipmentPacket(player.getId(), list);
-        if (!visible) hiddenEquipment = packet;
-        for (ServerPlayer viewer : viewers.keySet()) viewer.connection.send(packet);
+        List<Packet<ClientGamePacketListener>> list = equipmentPackets(player.getId(), visible);
+        if (!visible) hiddenEquipment = list;
+        for (ServerPlayer viewer : viewers.keySet()) for (Packet<ClientGamePacketListener> packet : list) viewer.connection.send(packet);
         if (visible) for (ServerPlayer viewer : level.players()) {
-            if (!viewers.containsKey(viewer)) viewer.connection.send(packet);
+            if (!viewers.containsKey(viewer)) for (Packet<ClientGamePacketListener> packet : list) viewer.connection.send(packet);
         }
+    }
+
+    /** 1.15 has no (pos, state) block-update constructor, so fill the packet's fields by type. */
+    static ClientboundBlockUpdatePacket blockUpdate(BlockPos pos, net.minecraft.world.level.block.state.BlockState state) {
+        ClientboundBlockUpdatePacket packet = new ClientboundBlockUpdatePacket();
+        for (java.lang.reflect.Field field : ClientboundBlockUpdatePacket.class.getDeclaredFields()) {
+            try {
+                field.setAccessible(true);
+                if (field.getType() == BlockPos.class) field.set(packet, pos);
+                else if (field.getType() == net.minecraft.world.level.block.state.BlockState.class) field.set(packet, state);
+            } catch (ReflectiveOperationException e) { throw new IllegalStateException(e); }
+        }
+        return packet;
+    }
+
+    static void setPose(Entity entity, Pose pose) {
+        try {
+            java.lang.reflect.Method method = Entity.class.getDeclaredMethod("setPose", Pose.class);
+            method.setAccessible(true);
+            method.invoke(entity, pose);
+        } catch (ReflectiveOperationException e) { throw new IllegalStateException(e); }
     }
 
     private static ClientboundAddEntityPacket addEntity(Entity entity) {

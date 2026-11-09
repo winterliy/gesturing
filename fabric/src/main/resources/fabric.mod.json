@@ -3,7 +3,7 @@
   "id": "gesturing",
   "version": "${version}",
   "name": "Gesturing",
-  "description": "Server-side gestures and block seating for Minecraft 1.16.5.",
+  "description": "Server-side gestures and block seating for Minecraft 1.15.2.",
   "authors": ["winterliy", "jaehyun"],
   "contact": {
     "sources": "https://github.com/winterliy/gesturing"
@@ -15,8 +15,8 @@
   },
   "depends": {
     "fabricloader": ">=0.20.1",
-    "fabric": ">=0.42.0+1.16",
-    "minecraft": "~1.16.5",
+    "fabric": ">=0.28.0+1.15",
+    "minecraft": "~1.15.2",
     "java": ">=8"
   }
 }

@@ -1,6 +1,6 @@
 package dev.ledge.gesturing.sit;
 
-import dev.ledge.gesturing.nms.v1_16_R3.SeatEntity;
+import dev.ledge.gesturing.nms.v1_15_R1.SeatEntity;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;

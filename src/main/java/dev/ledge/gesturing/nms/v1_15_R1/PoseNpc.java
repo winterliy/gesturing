@@ -1,7 +1,6 @@
-package dev.ledge.gesturing.nms.v1_16_R3;
+package dev.ledge.gesturing.nms.v1_15_R1;
 
 import com.mojang.authlib.GameProfile;
-import com.mojang.datafixers.util.Pair;
 import dev.ledge.gesturing.gesture.PoseKind;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -10,48 +9,48 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import net.minecraft.server.v1_16_R3.BlockBed;
-import net.minecraft.server.v1_16_R3.BlockPosition;
-import net.minecraft.server.v1_16_R3.BlockPropertyBedPart;
-import net.minecraft.server.v1_16_R3.Blocks;
-import net.minecraft.server.v1_16_R3.DataWatcher;
-import net.minecraft.server.v1_16_R3.DataWatcherObject;
-import net.minecraft.server.v1_16_R3.EntityHuman;
-import net.minecraft.server.v1_16_R3.EntityLiving;
-import net.minecraft.server.v1_16_R3.EntityPlayer;
-import net.minecraft.server.v1_16_R3.EntityPose;
-import net.minecraft.server.v1_16_R3.EnumDirection;
-import net.minecraft.server.v1_16_R3.EnumItemSlot;
-import net.minecraft.server.v1_16_R3.ItemStack;
-import net.minecraft.server.v1_16_R3.MinecraftServer;
-import net.minecraft.server.v1_16_R3.MobEffects;
-import net.minecraft.server.v1_16_R3.NBTTagCompound;
-import net.minecraft.server.v1_16_R3.Packet;
-import net.minecraft.server.v1_16_R3.PacketPlayOutBlockChange;
-import net.minecraft.server.v1_16_R3.PacketPlayOutEntity;
-import net.minecraft.server.v1_16_R3.PacketPlayOutEntityDestroy;
-import net.minecraft.server.v1_16_R3.PacketPlayOutEntityEquipment;
-import net.minecraft.server.v1_16_R3.PacketPlayOutEntityHeadRotation;
-import net.minecraft.server.v1_16_R3.PacketPlayOutEntityMetadata;
-import net.minecraft.server.v1_16_R3.PacketPlayOutEntityTeleport;
-import net.minecraft.server.v1_16_R3.PacketPlayOutMount;
-import net.minecraft.server.v1_16_R3.PacketPlayOutNamedEntitySpawn;
-import net.minecraft.server.v1_16_R3.PacketPlayOutPlayerInfo;
-import net.minecraft.server.v1_16_R3.PacketPlayOutSpawnEntity;
-import net.minecraft.server.v1_16_R3.PlayerInteractManager;
-import net.minecraft.server.v1_16_R3.WorldServer;
+import net.minecraft.server.v1_15_R1.BlockBed;
+import net.minecraft.server.v1_15_R1.BlockPosition;
+import net.minecraft.server.v1_15_R1.BlockPropertyBedPart;
+import net.minecraft.server.v1_15_R1.Blocks;
+import net.minecraft.server.v1_15_R1.DataWatcher;
+import net.minecraft.server.v1_15_R1.DataWatcherObject;
+import net.minecraft.server.v1_15_R1.EntityHuman;
+import net.minecraft.server.v1_15_R1.EntityLiving;
+import net.minecraft.server.v1_15_R1.EntityPlayer;
+import net.minecraft.server.v1_15_R1.EntityPose;
+import net.minecraft.server.v1_15_R1.EnumDirection;
+import net.minecraft.server.v1_15_R1.EnumItemSlot;
+import net.minecraft.server.v1_15_R1.ItemStack;
+import net.minecraft.server.v1_15_R1.MinecraftServer;
+import net.minecraft.server.v1_15_R1.MobEffects;
+import net.minecraft.server.v1_15_R1.NBTTagCompound;
+import net.minecraft.server.v1_15_R1.Packet;
+import net.minecraft.server.v1_15_R1.PacketPlayOutBlockChange;
+import net.minecraft.server.v1_15_R1.PacketPlayOutEntity;
+import net.minecraft.server.v1_15_R1.PacketPlayOutEntityDestroy;
+import net.minecraft.server.v1_15_R1.PacketPlayOutEntityEquipment;
+import net.minecraft.server.v1_15_R1.PacketPlayOutEntityHeadRotation;
+import net.minecraft.server.v1_15_R1.PacketPlayOutEntityMetadata;
+import net.minecraft.server.v1_15_R1.PacketPlayOutEntityTeleport;
+import net.minecraft.server.v1_15_R1.PacketPlayOutMount;
+import net.minecraft.server.v1_15_R1.PacketPlayOutNamedEntitySpawn;
+import net.minecraft.server.v1_15_R1.PacketPlayOutPlayerInfo;
+import net.minecraft.server.v1_15_R1.PacketPlayOutSpawnEntity;
+import net.minecraft.server.v1_15_R1.PlayerInteractManager;
+import net.minecraft.server.v1_15_R1.WorldServer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.v1_16_R3.CraftServer;
-import org.bukkit.craftbukkit.v1_16_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_15_R1.CraftServer;
+import org.bukkit.craftbukkit.v1_15_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_15_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 /**
  * Copyright (C) Gecolay and contributors.
- * Adapted from GSit 3.8.0 (GPL-3.0-only), Pose model, for Spigot-mapped 1.16.5 (v1_16_R3).
+ * Adapted from GSit 3.8.0 (GPL-3.0-only), Pose model, for Spigot-mapped 1.16.5 (v1_15_R1).
  * Gesturing changes: GSit services/config removed; the pose is a packet-only player copy attached to
  * Gesturing's seat entity, so the real player never sleeps (no bed screen, no darkening, no spawn change).
  */
@@ -82,8 +81,8 @@ public final class PoseNpc {
     private Set<Player> viewers = new HashSet<>();
     private List<Packet<?>> bundle;
     private PacketPlayOutEntityTeleport teleportPacket;
-    private PacketPlayOutEntityEquipment hiddenEquipment;
-    private PacketPlayOutBlockChange bedPacket;
+    private List<Packet<?>> hiddenEquipment;
+    private org.bukkit.block.data.BlockData bedData;
     private final PacketPlayOutPlayerInfo addInfoPacket;
     private final PacketPlayOutPlayerInfo removeInfoPacket;
     private final PacketPlayOutEntityDestroy removePacket;
@@ -113,8 +112,12 @@ public final class PoseNpc {
         npc.setLocation(seatLocation.getX(), offset, seatLocation.getZ(), 0f, 0f);
 
         direction = directionOf(seatLocation.getYaw());
-        if (lying) bedPacket = new PacketPlayOutBlockChange(bedPos, Blocks.WHITE_BED.getBlockData()
-                .set(BlockBed.FACING, direction.opposite()).set(BlockBed.PART, BlockPropertyBedPart.HEAD));
+        if (lying) {
+            org.bukkit.block.data.type.Bed bed = (org.bukkit.block.data.type.Bed) Bukkit.createBlockData(org.bukkit.Material.WHITE_BED);
+            bed.setFacing(org.bukkit.block.BlockFace.valueOf(direction.opposite().name()));
+            bed.setPart(org.bukkit.block.data.type.Bed.Part.HEAD);
+            bedData = bed;
+        }
         addInfoPacket = new PacketPlayOutPlayerInfo(PacketPlayOutPlayerInfo.EnumPlayerInfoAction.ADD_PLAYER, npc);
         removeInfoPacket = new PacketPlayOutPlayerInfo(PacketPlayOutPlayerInfo.EnumPlayerInfoAction.REMOVE_PLAYER, npc);
         removePacket = new PacketPlayOutEntityDestroy(npc.getId());
@@ -129,7 +132,7 @@ public final class PoseNpc {
 
     public void spawn() {
         viewers = nearbyPlayers();
-        npc.setPose(switch (kind) {
+        NmsReflect.setPose(npc, switch (kind) {
             case LAY, LEGS_UP -> EntityPose.SLEEPING;
             case BELLYFLOP -> EntityPose.SWIMMING;
             case SPIN -> EntityPose.SPIN_ATTACK;
@@ -156,10 +159,9 @@ public final class PoseNpc {
             packets.add(new PacketPlayOutEntityMetadata(vehicleEntity.getId(), vehicleEntity.getDataWatcher(), true));
             packets.add(new PacketPlayOutMount(vehicleEntity));
         }
-        if (lying) packets.add(bedPacket);
         packets.add(new PacketPlayOutEntityMetadata(npc.getId(), npcData, true));
         if (kind == PoseKind.SPIN) packets.add(new PacketPlayOutEntity.PacketPlayOutRelEntityMoveLook(npc.getId(), (short) 0, (short) 0, (short) 0, (byte) 0, fixedRotation(-90f), true));
-        packets.add(equipmentPacket());
+        packets.addAll(equipmentPackets(true));
         bundle = packets;
         for (Player viewer : viewers) addViewer(viewer);
 
@@ -196,6 +198,7 @@ public final class PoseNpc {
     }
 
     private void addViewer(Player player) {
+        if (lying) player.sendBlockChange(blockLocation, bedData);
         for (Packet<?> packet : bundle) send(player, packet);
         if (!lying) return;
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
@@ -242,22 +245,26 @@ public final class PoseNpc {
         for (Player viewer : viewers) send(viewer, head);
     }
 
-    private PacketPlayOutEntityEquipment equipmentPacket() {
-        List<Pair<EnumItemSlot, ItemStack>> list = new ArrayList<>();
-        for (EnumItemSlot slot : EnumItemSlot.values()) list.add(Pair.of(slot, serverPlayer.getEquipment(slot)));
-        return new PacketPlayOutEntityEquipment(npc.getId(), list);
+    /** One equipment packet per slot (1.15 has no multi-slot packet); {@code visible=false} sends empty items. */
+    private List<Packet<?>> equipmentPackets(boolean visible) {
+        List<Packet<?>> list = new ArrayList<>();
+        for (EnumItemSlot slot : EnumItemSlot.values()) {
+            list.add(new PacketPlayOutEntityEquipment(npc.getId(), slot, visible ? serverPlayer.getEquipment(slot) : ItemStack.a));
+        }
+        return list;
     }
 
     private void setEquipmentVisibility(boolean visible) {
         if (!visible && hiddenEquipment != null) {
-            for (Player viewer : viewers) send(viewer, hiddenEquipment);
+            for (Player viewer : viewers) for (Packet<?> packet : hiddenEquipment) send(viewer, packet);
             return;
         }
-        List<Pair<EnumItemSlot, ItemStack>> list = new ArrayList<>();
-        for (EnumItemSlot slot : EnumItemSlot.values()) list.add(Pair.of(slot, visible ? serverPlayer.getEquipment(slot) : ItemStack.b));
-        PacketPlayOutEntityEquipment packet = new PacketPlayOutEntityEquipment(serverPlayer.getId(), list);
-        if (!visible) hiddenEquipment = packet;
-        for (Player viewer : viewers) send(viewer, packet);
+        List<Packet<?>> list = new ArrayList<>();
+        for (EnumItemSlot slot : EnumItemSlot.values()) {
+            list.add(new PacketPlayOutEntityEquipment(serverPlayer.getId(), slot, visible ? serverPlayer.getEquipment(slot) : ItemStack.a));
+        }
+        if (!visible) hiddenEquipment = list;
+        for (Player viewer : viewers) for (Packet<?> packet : list) send(viewer, packet);
     }
 
     private static byte fixedRotation(float rotation) { return (byte) (rotation * 256f / 360f); }
