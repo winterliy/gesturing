@@ -1,10 +1,10 @@
-package dev.ledge.gesturing.nms.v1_13_R2;
+package dev.ledge.gesturing.nms.v1_12_R1;
 
 import java.lang.reflect.Field;
-import net.minecraft.server.v1_13_R2.Entity;
-import net.minecraft.server.v1_13_R2.EntityAreaEffectCloud;
+import net.minecraft.server.v1_12_R1.Entity;
+import net.minecraft.server.v1_12_R1.EntityAreaEffectCloud;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_13_R2.CraftWorld;
+import org.bukkit.craftbukkit.v1_12_R1.CraftWorld;
 
 /**
  * Copyright (C) Gecolay and contributors.
@@ -15,7 +15,6 @@ public final class PoseHelperEntity extends EntityAreaEffectCloud {
 
     public PoseHelperEntity(Location location) {
         super(((CraftWorld) location.getWorld()).getHandle(), location.getX(), location.getY(), location.getZ());
-        persist = false;
         setRadius(0);
         setDuration(Integer.MAX_VALUE);
         setNoGravity(true);
@@ -33,7 +32,7 @@ public final class PoseHelperEntity extends EntityAreaEffectCloud {
         return vehicleField;
     }
 
-    @Override public void tick() { }
+    @Override public void B_() { }
 
     /** Links {@code passenger} to this entity without server-side riding logic (packet-only use). */
     public void attachPassenger(Entity passenger) {

@@ -1,14 +1,14 @@
 package dev.ledge.gesturing.sit;
 
-import dev.ledge.gesturing.nms.v1_13_R2.SeatEntity;
+import dev.ledge.gesturing.nms.v1_12_R1.SeatEntity;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.data.Directional;
-import org.bukkit.block.data.type.Stairs;
+import org.bukkit.material.Directional;
+import org.bukkit.material.Stairs;
 import org.bukkit.entity.Player;
 
 public final class SeatManager {
@@ -27,8 +27,8 @@ public final class SeatManager {
         Location returnLocation = player.getLocation().clone();
         Block block = player.getLocation().getBlock().getRelative(BlockFace.DOWN);
         if (block.isEmpty() || block.isLiquid()) return false;
-        SeatGeometry.Offset offset = SeatGeometry.offsetFor(block.getBlockData());
-        boolean directional = block.getBlockData() instanceof Stairs || block.getBlockData() instanceof Directional;
+        SeatGeometry.Offset offset = SeatGeometry.offsetFor(block.getState().getData());
+        boolean directional = block.getState().getData() instanceof Stairs || block.getState().getData() instanceof Directional;
         Location location = new Location(block.getWorld(), block.getX() + offset.x(), block.getY() + offset.y() - 0.025,
                 block.getZ() + offset.z(), directional ? offset.yaw() : yaw, 0f);
         SeatEntity seat = new SeatEntity(location);

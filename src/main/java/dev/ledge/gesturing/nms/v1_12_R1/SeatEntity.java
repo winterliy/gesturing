@@ -1,18 +1,18 @@
-package dev.ledge.gesturing.nms.v1_13_R2;
+package dev.ledge.gesturing.nms.v1_12_R1;
 
-import net.minecraft.server.v1_13_R2.DamageSource;
-import net.minecraft.server.v1_13_R2.Entity;
-import net.minecraft.server.v1_13_R2.EntityArmorStand;
-import net.minecraft.server.v1_13_R2.EnumMoveType;
+import net.minecraft.server.v1_12_R1.DamageSource;
+import net.minecraft.server.v1_12_R1.Entity;
+import net.minecraft.server.v1_12_R1.EntityArmorStand;
+import net.minecraft.server.v1_12_R1.EnumMoveType;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_13_R2.CraftWorld;
-import org.bukkit.craftbukkit.v1_13_R2.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_12_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_12_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 
 /**
  * Copyright (C) Gecolay and contributors.
- * Adapted from GSit 3.8.0 (GPL-3.0-only), SeatEntity, for Spigot-mapped 1.16.5 (v1_13_R2).
+ * Adapted from GSit 3.8.0 (GPL-3.0-only), SeatEntity, for Spigot-mapped 1.16.5 (v1_12_R1).
  */
 public final class SeatEntity extends EntityArmorStand {
     private Runnable runnable;
@@ -21,7 +21,6 @@ public final class SeatEntity extends EntityArmorStand {
 
     public SeatEntity(Location location) {
         super(((CraftWorld) location.getWorld()).getHandle(), location.getX(), location.getY(), location.getZ());
-        persist = false;
         setInvisible(true);
         setNoGravity(true);
         setMarker(true);
@@ -32,8 +31,8 @@ public final class SeatEntity extends EntityArmorStand {
         addScoreboardTag("gesturing_seat");
     }
 
-    @Override public void tick() {
-        super.tick();
+    @Override public void B_() {
+        super.B_();
         if (!isAlive() || !valid) return;
         if (runnable != null) runnable.run();
         if (!passengers.isEmpty()) {

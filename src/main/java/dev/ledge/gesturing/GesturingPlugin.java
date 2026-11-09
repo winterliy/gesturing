@@ -3,7 +3,7 @@ package dev.ledge.gesturing;
 import dev.ledge.gesturing.sit.SeatManager;
 import dev.ledge.gesturing.gesture.GestureDirection;
 import dev.ledge.gesturing.gesture.PoseKind;
-import dev.ledge.gesturing.nms.v1_13_R2.PoseNpc;
+import dev.ledge.gesturing.nms.v1_12_R1.PoseNpc;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 import java.util.HashMap;
@@ -110,7 +110,9 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
         stop(player, false);
         remember(player);
         if (explicitDirection) {
-            player.setRotation(GestureDirection.parse(args[0]).get().yaw(), player.getLocation().getPitch());
+            Location facing = player.getLocation();
+            facing.setYaw(GestureDirection.parse(args[0]).get().yaw());
+            player.teleport(facing);
         }
         PoseKind npcKind = switch (gesture) {
             case LAY -> PoseKind.LAY; case LEGS_UP -> PoseKind.LEGS_UP;
@@ -134,7 +136,7 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
             case CRAWL -> {
                 Location ceiling = player.getLocation().getBlock().getRelative(BlockFace.UP).getLocation();
                 if (ceiling.getBlock().isEmpty()) {
-                    player.sendBlockChange(ceiling, Material.BARRIER.createBlockData());
+                    player.sendBlockChange(ceiling, Material.BARRIER, (byte) 0);
                     ceilings.put(player.getUniqueId(), ceiling);
                 }
                 setPose(player, pose);
@@ -155,7 +157,7 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
         PoseNpc npc = poseNpcs.remove(id);
         if (npc != null) npc.remove();
         Location ceiling = ceilings.remove(id);
-        if (ceiling != null && player.isOnline()) player.sendBlockChange(ceiling, ceiling.getBlock().getBlockData());
+        if (ceiling != null && player.isOnline()) player.sendBlockChange(ceiling, ceiling.getBlock().getType(), ceiling.getBlock().getData());
     }
 
     private void remember(Player player) { originalPoses.putIfAbsent(player.getUniqueId(), Pose.STANDING); }

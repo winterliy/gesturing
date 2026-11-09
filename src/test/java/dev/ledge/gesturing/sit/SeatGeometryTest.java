@@ -3,13 +3,12 @@ package dev.ledge.gesturing.sit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.data.type.Stairs;
 import org.junit.jupiter.api.Test;
 
 class SeatGeometryTest {
     @Test
     void fullBlocksUseCenterAndStandardHeight() {
-        SeatGeometry.Offset offset = SeatGeometry.offsetFor(shape(SeatGeometry.Kind.FULL, false, BlockFace.SELF, Stairs.Shape.STRAIGHT));
+        SeatGeometry.Offset offset = SeatGeometry.offsetFor(shape(SeatGeometry.Kind.FULL, false, BlockFace.SELF, SeatGeometry.StairShape.STRAIGHT));
         assertEquals(0.5, offset.x(), 1e-9);
         assertEquals(1.0, offset.y(), 1e-9);
         assertEquals(0.5, offset.z(), 1e-9);
@@ -17,8 +16,8 @@ class SeatGeometryTest {
 
     @Test
     void slabHalvesUseTheirActualTopSurface() {
-        assertEquals(0.5, SeatGeometry.offsetFor(shape(SeatGeometry.Kind.BOTTOM_SLAB, false, BlockFace.SELF, Stairs.Shape.STRAIGHT)).y(), 1e-9);
-        assertEquals(1.0, SeatGeometry.offsetFor(shape(SeatGeometry.Kind.FULL, false, BlockFace.SELF, Stairs.Shape.STRAIGHT)).y(), 1e-9);
+        assertEquals(0.5, SeatGeometry.offsetFor(shape(SeatGeometry.Kind.BOTTOM_SLAB, false, BlockFace.SELF, SeatGeometry.StairShape.STRAIGHT)).y(), 1e-9);
+        assertEquals(1.0, SeatGeometry.offsetFor(shape(SeatGeometry.Kind.FULL, false, BlockFace.SELF, SeatGeometry.StairShape.STRAIGHT)).y(), 1e-9);
     }
 
     @Test
@@ -28,7 +27,7 @@ class SeatGeometryTest {
         double[] xs = {0.5, 0.5, 0.377, 0.623};
         double[] zs = {0.623, 0.377, 0.5, 0.5};
         for (int index = 0; index < facings.length; index++) {
-            SeatGeometry.Offset offset = SeatGeometry.offsetFor(shape(SeatGeometry.Kind.STAIRS, true, facings[index], Stairs.Shape.STRAIGHT));
+            SeatGeometry.Offset offset = SeatGeometry.offsetFor(shape(SeatGeometry.Kind.STAIRS, true, facings[index], SeatGeometry.StairShape.STRAIGHT));
             assertEquals(xs[index], offset.x(), 1e-9);
             assertEquals(0.525, offset.y(), 1e-9);
             assertEquals(zs[index], offset.z(), 1e-9);
@@ -41,7 +40,7 @@ class SeatGeometryTest {
         BlockFace[] facings = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST};
         float[] yaws = {180f, 0f, -90f, 90f};
         for (int index = 0; index < facings.length; index++) {
-            SeatGeometry.Offset offset = SeatGeometry.offsetFor(shape(SeatGeometry.Kind.DIRECTIONAL, false, facings[index], Stairs.Shape.STRAIGHT));
+            SeatGeometry.Offset offset = SeatGeometry.offsetFor(shape(SeatGeometry.Kind.DIRECTIONAL, false, facings[index], SeatGeometry.StairShape.STRAIGHT));
             assertEquals(0.5, offset.x(), 1e-9);
             assertEquals(1.0, offset.y(), 1e-9);
             assertEquals(0.5, offset.z(), 1e-9);
@@ -51,12 +50,12 @@ class SeatGeometryTest {
 
     @Test
     void upperStairsAndAllCornerShapesRemainSupported() {
-        for (Stairs.Shape shape : Stairs.Shape.values()) {
+        for (SeatGeometry.StairShape shape : SeatGeometry.StairShape.values()) {
             assertEquals(1.0, SeatGeometry.offsetFor(shape(SeatGeometry.Kind.STAIRS, false, BlockFace.NORTH, shape)).y(), 1e-9);
             assertEquals(0.525, SeatGeometry.offsetFor(shape(SeatGeometry.Kind.STAIRS, true, BlockFace.NORTH, shape)).y(), 1e-9);
         }
         BlockFace[] facings = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST};
-        Stairs.Shape[] shapes = {Stairs.Shape.OUTER_LEFT, Stairs.Shape.OUTER_RIGHT, Stairs.Shape.INNER_LEFT, Stairs.Shape.INNER_RIGHT};
+        SeatGeometry.StairShape[] shapes = {SeatGeometry.StairShape.OUTER_LEFT, SeatGeometry.StairShape.OUTER_RIGHT, SeatGeometry.StairShape.INNER_LEFT, SeatGeometry.StairShape.INNER_RIGHT};
         boolean[] right = {false, true, false, true};
         for (BlockFace facing : facings) {
             for (int index = 0; index < shapes.length; index++) {
@@ -90,7 +89,7 @@ class SeatGeometryTest {
         }
     }
 
-    private static SeatGeometry.Shape shape(SeatGeometry.Kind kind, boolean bottomHalf, BlockFace face, Stairs.Shape stairShape) {
+    private static SeatGeometry.Shape shape(SeatGeometry.Kind kind, boolean bottomHalf, BlockFace face, SeatGeometry.StairShape stairShape) {
         return new SeatGeometry.Shape(kind, bottomHalf, face, stairShape);
     }
 }

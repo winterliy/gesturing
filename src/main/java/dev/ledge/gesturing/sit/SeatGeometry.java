@@ -1,11 +1,11 @@
 package dev.ledge.gesturing.sit;
 
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.data.Bisected;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.block.data.Directional;
-import org.bukkit.block.data.type.Slab;
-import org.bukkit.block.data.type.Stairs;
+import org.bukkit.material.Directional;
+import org.bukkit.material.MaterialData;
+import org.bukkit.material.Stairs;
+import org.bukkit.material.Step;
+import org.bukkit.material.WoodenStep;
 
 /**
  * Copyright (C) Gecolay and contributors.
@@ -17,19 +17,19 @@ public final class SeatGeometry {
 
     private SeatGeometry() { }
 
-    public static Offset offsetFor(BlockData data) {
-        if (data instanceof Stairs stairs) {
-            return offsetFor(new Shape(Kind.STAIRS, stairs.getHalf() == Bisected.Half.BOTTOM,
-                    stairs.getFacing(), stairs.getShape()));
+    public static Offset offsetFor(MaterialData data) {
+        if (data instanceof Stairs) {
+            Stairs stairs = (Stairs) data;
+            return offsetFor(new Shape(Kind.STAIRS, !stairs.isInverted(), stairs.getFacing(), StairShape.STRAIGHT));
         }
-        if (data instanceof Slab slab) {
-            return offsetFor(new Shape(slab.getType() == Slab.Type.BOTTOM ? Kind.BOTTOM_SLAB : Kind.FULL,
-                    false, BlockFace.SELF, Stairs.Shape.STRAIGHT));
+        if (data instanceof Step || data instanceof WoodenStep) {
+            boolean inverted = data instanceof Step ? ((Step) data).isInverted() : ((WoodenStep) data).isInverted();
+            return offsetFor(new Shape(inverted ? Kind.FULL : Kind.BOTTOM_SLAB, false, BlockFace.SELF, StairShape.STRAIGHT));
         }
-        if (data instanceof Directional directional) {
-            return offsetFor(new Shape(Kind.DIRECTIONAL, false, directional.getFacing(), Stairs.Shape.STRAIGHT));
+        if (data instanceof Directional) {
+            return offsetFor(new Shape(Kind.DIRECTIONAL, false, ((Directional) data).getFacing(), StairShape.STRAIGHT));
         }
-        return offsetFor(new Shape(Kind.FULL, false, BlockFace.SELF, Stairs.Shape.STRAIGHT));
+        return offsetFor(new Shape(Kind.FULL, false, BlockFace.SELF, StairShape.STRAIGHT));
     }
 
     public static Offset offsetFor(Shape shape) {
@@ -40,7 +40,7 @@ public final class SeatGeometry {
         } else if (shape.kind() == Kind.STAIRS && shape.bottomHalf()) {
             y = 0.525d;
             BlockFace back = shape.facing().getOppositeFace();
-            if (shape.stairShape() == Stairs.Shape.STRAIGHT) {
+            if (shape.stairShape() == StairShape.STRAIGHT) {
                 switch (back) {
                     case EAST -> { x += STAIR_OFFSET; yaw = -90f; }
                     case SOUTH -> { z += STAIR_OFFSET; yaw = 0f; }
@@ -49,8 +49,8 @@ public final class SeatGeometry {
                     default -> { }
                 }
             } else {
-                Stairs.Shape stairShape = shape.stairShape();
-                boolean right = stairShape == Stairs.Shape.OUTER_RIGHT || stairShape == Stairs.Shape.INNER_RIGHT;
+                StairShape stairShape = shape.stairShape();
+                boolean right = stairShape == StairShape.OUTER_RIGHT || stairShape == StairShape.INNER_RIGHT;
                 if (back == BlockFace.NORTH) {
                     x += right ? STAIR_OFFSET : -STAIR_OFFSET; z -= STAIR_OFFSET; yaw = right ? -135f : 135f;
                 } else if (back == BlockFace.EAST) {
@@ -83,16 +83,18 @@ public final class SeatGeometry {
         };
     }
 
+    /** Stair corner shape; 1.12 block data does not expose corners, so only STRAIGHT is produced there. */
+    public enum StairShape { STRAIGHT, INNER_LEFT, INNER_RIGHT, OUTER_LEFT, OUTER_RIGHT }
     public enum Kind { FULL, BOTTOM_SLAB, STAIRS, DIRECTIONAL }
     public static final class Shape {
-        private final Kind kind; private final boolean bottomHalf; private final BlockFace facing; private final Stairs.Shape stairShape;
-        public Shape(Kind kind, boolean bottomHalf, BlockFace facing, Stairs.Shape stairShape) {
+        private final Kind kind; private final boolean bottomHalf; private final BlockFace facing; private final StairShape stairShape;
+        public Shape(Kind kind, boolean bottomHalf, BlockFace facing, StairShape stairShape) {
             this.kind = kind; this.bottomHalf = bottomHalf; this.facing = facing; this.stairShape = stairShape;
         }
         public Kind kind() { return kind; }
         public boolean bottomHalf() { return bottomHalf; }
         public BlockFace facing() { return facing; }
-        public Stairs.Shape stairShape() { return stairShape; }
+        public StairShape stairShape() { return stairShape; }
     }
     public static final class Offset {
         private final double x, y, z; private final float yaw;
