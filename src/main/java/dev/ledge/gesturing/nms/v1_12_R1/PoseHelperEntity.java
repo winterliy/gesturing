@@ -25,8 +25,14 @@ public final class PoseHelperEntity extends EntityAreaEffectCloud {
     private static synchronized Field vehicleField() {
         if (vehicleField == null) {
             try {
-                vehicleField = Entity.class.getDeclaredField("vehicle");
-                vehicleField.setAccessible(true);
+                // Spigot 1.12 keeps the obfuscated name ("au"); the only instance field of type Entity is the vehicle.
+                for (Field field : Entity.class.getDeclaredFields()) {
+                    if (java.lang.reflect.Modifier.isStatic(field.getModifiers()) || field.getType() != Entity.class) continue;
+                    field.setAccessible(true);
+                    vehicleField = field;
+                    break;
+                }
+                if (vehicleField == null) throw new NoSuchFieldException("Entity vehicle field");
             } catch (ReflectiveOperationException e) { throw new IllegalStateException(e); }
         }
         return vehicleField;
