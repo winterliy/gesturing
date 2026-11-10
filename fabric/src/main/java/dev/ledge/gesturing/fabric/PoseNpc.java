@@ -218,19 +218,31 @@ final class PoseNpc {
         for (ServerPlayerEntity viewer : viewers) for (Packet<?> packet : list) send(viewer, packet);
     }
 
-    /** Links {@code passenger} to {@code vehicle} without server-side riding logic (packet-only use). */
+    /**
+     * Links {@code passenger} to {@code vehicle} without server-side riding logic (packet-only use).
+     * The vehicle field is found by type, not name: production jars use intermediary names at runtime.
+     */
     private static void attach(Entity passenger, Entity vehicle) {
         try {
-            Field field = Entity.class.getDeclaredField("vehicle");
-            field.setAccessible(true);
-            field.set(passenger, vehicle);
+            for (Field field : Entity.class.getDeclaredFields()) {
+                if (Modifier.isStatic(field.getModifiers()) || field.getType() != Entity.class) continue;
+                field.setAccessible(true);
+                field.set(passenger, vehicle);
+            }
         } catch (ReflectiveOperationException e) { throw new IllegalStateException(e); }
         try {
-            Field list = Entity.class.getDeclaredField("passengerList");
-            list.setAccessible(true);
-            @SuppressWarnings("unchecked") List<Entity> passengers = (List<Entity>) list.get(vehicle);
-            if (!passengers.contains(passenger)) passengers.add(passenger);
+            for (Field field : Entity.class.getDeclaredFields()) {
+                if (Modifier.isStatic(field.getModifiers()) || field.getType() != List.class) continue;
+                java.lang.reflect.Type t = field.getGenericType();
+                if (!(t instanceof java.lang.reflect.ParameterizedType)
+                        || ((java.lang.reflect.ParameterizedType) t).getActualTypeArguments()[0] != Entity.class) continue;
+                field.setAccessible(true);
+                @SuppressWarnings("unchecked") List<Entity> passengers = (List<Entity>) field.get(vehicle);
+                if (!passengers.contains(passenger)) passengers.add(passenger);
+                return;
+            }
         } catch (ReflectiveOperationException e) { throw new IllegalStateException(e); }
+        throw new IllegalStateException("Entity passenger list field not found");
     }
 
     /** Finds a static TrackedData with the given entity-data id (obfuscated field names differ per release). */
