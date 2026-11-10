@@ -134,7 +134,7 @@ final class PoseNpc {
     private List<Packet<?>> equipment(int entityId, boolean visible) {
         List<Packet<?>> list = new ArrayList<>();
         for (int slot = 0; slot < 5; slot++) {
-            list.add(new EntityEquipmentUpdateS2CPacket(entityId, slot, visible ? (slot == 0 ? player.getStackInHand() : player.getArmorSlot(slot - 1)) : null));
+            list.add(new EntityEquipmentUpdateS2CPacket(entityId, slot, visible ? (slot == 0 ? player.getStackInHand() : player.inventory.armor[slot - 1] /* getArmorSlot is client-only on 1.8.9 servers */) : null));
         }
         return list;
     }
