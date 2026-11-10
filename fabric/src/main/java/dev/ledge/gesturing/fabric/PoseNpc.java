@@ -56,13 +56,33 @@ final class PoseNpc {
 
     private static final double BASE_OFFSET = -0.025d;
     private static final double RENDER_RANGE = 160d;
-    private static final EntityDataAccessor<Pose> POSE_ACCESSOR = EntityDataSerializers.POSE.createAccessor(6);
-    private static final EntityDataAccessor<Byte> DATA_FLAG_ACCESSOR = EntityDataSerializers.BYTE.createAccessor(8);
-    private static final EntityDataAccessor<Optional<BlockPos>> SLEEP_BLOCK_POS_ACCESSOR = EntityDataSerializers.OPTIONAL_BLOCK_POS.createAccessor(14);
-    private static final EntityDataAccessor<Byte> MAIN_HAND_ACCESSOR = EntityDataSerializers.BYTE.createAccessor(18);
-    private static final EntityDataAccessor<Byte> SKIN_ACCESSOR = EntityDataSerializers.BYTE.createAccessor(17);
-    private static final EntityDataAccessor<net.minecraft.nbt.CompoundTag> LEFT_SHOULDER_ACCESSOR = EntityDataSerializers.COMPOUND_TAG.createAccessor(19);
-    private static final EntityDataAccessor<net.minecraft.nbt.CompoundTag> RIGHT_SHOULDER_ACCESSOR = EntityDataSerializers.COMPOUND_TAG.createAccessor(20);
+    private static final EntityDataAccessor<Pose> POSE_ACCESSOR = accessor(net.minecraft.world.entity.Entity.class, EntityDataSerializers.POSE, 0);
+    private static final EntityDataAccessor<Byte> DATA_FLAG_ACCESSOR = accessor(net.minecraft.world.entity.LivingEntity.class, EntityDataSerializers.BYTE, 0);
+    private static final EntityDataAccessor<Optional<BlockPos>> SLEEP_BLOCK_POS_ACCESSOR = accessor(net.minecraft.world.entity.LivingEntity.class, EntityDataSerializers.OPTIONAL_BLOCK_POS, 0);
+    private static final EntityDataAccessor<Byte> MAIN_HAND_ACCESSOR = accessor(net.minecraft.world.entity.player.Player.class, EntityDataSerializers.BYTE, 1);
+    private static final EntityDataAccessor<Byte> SKIN_ACCESSOR = accessor(net.minecraft.world.entity.player.Player.class, EntityDataSerializers.BYTE, 0);
+    private static final EntityDataAccessor<net.minecraft.nbt.CompoundTag> LEFT_SHOULDER_ACCESSOR = accessor(net.minecraft.world.entity.player.Player.class, EntityDataSerializers.COMPOUND_TAG, 0);
+    private static final EntityDataAccessor<net.minecraft.nbt.CompoundTag> RIGHT_SHOULDER_ACCESSOR = accessor(net.minecraft.world.entity.player.Player.class, EntityDataSerializers.COMPOUND_TAG, 1);
+    /**
+     * Returns the {@code index}-th static data accessor of {@code owner} with the given serializer, ordered by id.
+     * Entity-data ids shift between releases (1.14 vs 1.15 vs 1.17), so they are read from the game instead of hard-coded.
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> EntityDataAccessor<T> accessor(Class<?> owner, net.minecraft.network.syncher.EntityDataSerializer<T> serializer, int index) {
+        java.util.List<EntityDataAccessor<?>> found = new java.util.ArrayList<>();
+        for (Field field : owner.getDeclaredFields()) {
+            if (!java.lang.reflect.Modifier.isStatic(field.getModifiers()) || field.getType() != EntityDataAccessor.class) continue;
+            try {
+                field.setAccessible(true);
+                EntityDataAccessor<?> a = (EntityDataAccessor<?>) field.get(null);
+                if (a.getSerializer() == serializer) found.add(a);
+            } catch (ReflectiveOperationException e) { throw new IllegalStateException(e); }
+        }
+        found.sort(java.util.Comparator.comparingInt(EntityDataAccessor::getId));
+        if (found.size() <= index) throw new IllegalStateException("No data accessor #" + index + " in " + owner.getSimpleName());
+        return (EntityDataAccessor<T>) found.get(index);
+    }
+
     private static Field passengersField;
     private static Field vehicleField;
 
