@@ -113,7 +113,7 @@ public final class GesturingPlugin extends JavaPlugin implements Listener, Comma
         stop(player, false);
         remember(player);
         if (explicitDirection) {
-            player.setRotation(GestureDirection.parse(args[0]).get().yaw(), player.getLocation().getPitch());
+            { org.bukkit.Location look = player.getLocation(); look.setYaw(GestureDirection.parse(args[0]).get().yaw()); player.teleport(look); } // setRotation rejects players before 1.19
         }
         PoseKind npcKind = switch (gesture) {
             case LAY -> PoseKind.LAY; case LEGS_UP -> PoseKind.LEGS_UP;
