@@ -12,9 +12,10 @@ public final class SeatGeometry {
     private SeatGeometry() { }
 
     public static Offset offsetFor(World world, int x, int y, int z) {
-        Block block = world.getBlock(x, y, z);
+        int id = world.getBlock(x, y, z);
+        Block block = Block.BLOCKS[id];
         int meta = world.getBlockData(x, y, z);
-        if (block instanceof SlabBlock && !block.isFullCube()) {
+        if (block instanceof SlabBlock && id != 43 && id != 125 /* not a double slab */) {
             return (meta & 8) == 0 ? new Offset(0.5d, 0.5d, 0.5d, 0f) : new Offset(0.5d, 1.0d, 0.5d, 0f);
         }
         if (block instanceof StairsBlock && (meta & 4) == 0) {

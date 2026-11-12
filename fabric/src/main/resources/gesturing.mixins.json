@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "dev.ledge.gesturing.fabric.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": ["MixinCommandManager", "MixinMinecraftServer"],
+  "injectors": { "defaultRequire": 1 }
+}
